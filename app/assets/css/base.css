@@ -1,0 +1,36 @@
+/*
+  Styles de base : reset, body, polices, couleurs globales.
+*/
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  @apply bg-dark font-retro text-white antialiased;
+  line-height: 1.6;
+}
+
+/* Titre de section */
+.section-title {
+  text-shadow: 0 0 10px #00fff5, 0 0 25px rgba(0, 255, 245, 0.67);
+}
+
+/* Animation de clignotement pour l'icône du logo */
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.3;
+  }
+}
+
+.animate-blink {
+  animation: blink 2s infinite;
+}

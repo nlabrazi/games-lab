@@ -1,0 +1,102 @@
+/*
+  Effet glitch pour le titre (utilisé par la classe .glitch et data-text).
+*/
+.glitch {
+  position: relative;
+  display: inline-block;
+  animation: glitch-skew 3s infinite linear alternate-reverse;
+}
+
+.glitch::before,
+.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #1a1a2e;
+}
+
+.glitch::before {
+  color: #0ff;
+  text-shadow: -2px 0 #ff00ff;
+  clip: rect(12px, 550px, 42px, 0);
+  animation: glitch-anim-1 2s infinite linear alternate-reverse;
+}
+
+.glitch::after {
+  color: #ff0;
+  text-shadow: -2px 0 #00fff5;
+  clip: rect(85px, 550px, 110px, 0);
+  animation: glitch-anim-2 3s infinite linear alternate-reverse;
+}
+
+@keyframes glitch-skew {
+  0% {
+    transform: skew(0deg);
+  }
+
+  20% {
+    transform: skew(-2deg);
+  }
+
+  80% {
+    transform: skew(1deg);
+  }
+
+  100% {
+    transform: skew(0deg);
+  }
+}
+
+@keyframes glitch-anim-1 {
+  0% {
+    clip: rect(10px, 9999px, 90px, 0);
+  }
+
+  20% {
+    clip: rect(20px, 9999px, 15px, 0);
+  }
+
+  40% {
+    clip: rect(55px, 9999px, 105px, 0);
+  }
+
+  60% {
+    clip: rect(75px, 9999px, 40px, 0);
+  }
+
+  80% {
+    clip: rect(5px, 9999px, 65px, 0);
+  }
+
+  100% {
+    clip: rect(30px, 9999px, 80px, 0);
+  }
+}
+
+@keyframes glitch-anim-2 {
+  0% {
+    clip: rect(90px, 9999px, 55px, 0);
+  }
+
+  20% {
+    clip: rect(10px, 9999px, 73px, 0);
+  }
+
+  40% {
+    clip: rect(45px, 9999px, 28px, 0);
+  }
+
+  60% {
+    clip: rect(62px, 9999px, 95px, 0);
+  }
+
+  80% {
+    clip: rect(15px, 9999px, 56px, 0);
+  }
+
+  100% {
+    clip: rect(88px, 9999px, 44px, 0);
+  }
+}

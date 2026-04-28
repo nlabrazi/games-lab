@@ -1,0 +1,22 @@
+/*
+  Boutons pixel style arcade (utilisés par la classe .btn-pixel).
+*/
+.btn-pixel {
+  @apply inline-block px-6 py-3 font-pixel text-xs uppercase;
+  color: #0f0;
+  background: #111;
+  border: 3px solid #0f0;
+  border-radius: 2px;
+  text-decoration: none;
+  box-shadow: 0 0 8px #0f0, inset 0 0 5px #0f0;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  letter-spacing: 1px;
+}
+
+.btn-pixel:hover {
+  background: #0f0;
+  color: #000;
+  box-shadow: 0 0 20px #0f0, inset 0 0 15px #000;
+  transform: scale(1.05);
+}

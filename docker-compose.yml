@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  games-lab:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: games-lab
+    container_name: games-lab
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
