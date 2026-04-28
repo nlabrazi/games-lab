@@ -1,20 +1,36 @@
 {
   "name": "games-lab",
-  "type": "module",
   "private": true,
+  "type": "module",
   "scripts": {
-    "build": "nuxt build",
     "dev": "nuxt dev",
+    "build": "nuxt build",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "lint": "biome check .",
+    "format": "biome format . --write"
   },
   "dependencies": {
     "nuxt": "^4.4.2",
-    "vue": "^3.5.33",
-    "vue-router": "^5.0.6"
+    "vue": "^3.5.33"
   },
   "devDependencies": {
-    "@nuxtjs/tailwindcss": "^6.14.0"
-  }
+    "@biomejs/biome": "^1.9.4",
+    "@nuxtjs/tailwindcss": "^6.14.0",
+    "typescript": "^5.9.3"
+  },
+  "version": "1.0.0",
+  "description": "<a name=\"readme-top\"></a>",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nlabrazi/games-lab.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nlabrazi/games-lab/issues"
+  },
+  "homepage": "https://github.com/nlabrazi/games-lab#readme"
 }
