@@ -13,9 +13,9 @@
         // MES JEUX</h2>
 
       <!-- Si un jeu est sélectionné, afficher le détail -->
-      <GameDetail v-if="selectedGame" @back="clearSelection" />
+      <GameDetail v-if="selectedGame" :selected-game="selectedGame" @back="clearSelection" />
       <!-- Sinon afficher la grille -->
-      <GameGrid v-else @select="selectGame" />
+      <GameGrid v-else @select="handleGameSelect" />
     </section>
 
     <!-- Section À propos -->
@@ -56,6 +56,15 @@
   Initialise les jeux depuis le composable.
 */
 import { useGames } from "~/composables/useGames";
+import type { Game } from "~/data/games";
 
 const { selectedGame, selectGame, clearSelection } = useGames();
+
+const handleGameSelect = (game: Game) => {
+  if (game.link !== "#") {
+    return navigateTo(game.link);
+  }
+
+  selectGame(game);
+};
 </script>
