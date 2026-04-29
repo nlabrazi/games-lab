@@ -22,7 +22,7 @@ export const games: Game[] = [
     longDesc:
       "Un hommage aux jeux d'arcade des années 80. Utilise les flèches pour te déplacer et la barre espace pour tirer. Développé en vanilla JS avec Canvas.",
     icon: "👾",
-    link: "#",
+    link: "/games/pixel-invaders",
     color: "#e94560",
   },
   {
