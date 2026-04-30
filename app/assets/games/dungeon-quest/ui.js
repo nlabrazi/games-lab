@@ -90,4 +90,15 @@ function drawGame() {
         ctx.font = '14px monospace';
         ctx.fillText(`Cliquez sur ATTAQUER (bouton)`, 20, 75);
     }
+
+    if (isPaused) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.62)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#7fffd4';
+        ctx.font = 'bold 42px monospace';
+        ctx.fillText('⏸ PAUSE', canvas.width / 2 - 105, canvas.height / 2 - 20);
+        ctx.fillStyle = '#f0ff70';
+        ctx.font = '20px monospace';
+        ctx.fillText('Appuyez sur P ou ECHAP pour reprendre', canvas.width / 2 - 205, canvas.height / 2 + 35);
+    }
 }
