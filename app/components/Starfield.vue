@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 let animationFrameId = 0;
@@ -53,7 +53,7 @@ const draw = () => {
   if (!ctx) return;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  stars.forEach((star) => {
+  for (const star of stars) {
     ctx.beginPath();
     ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
     ctx.fillStyle = `rgba(255, 255, 255, ${star.brightness})`;
@@ -63,7 +63,7 @@ const draw = () => {
       star.y = 0;
       star.x = Math.random() * canvas.width;
     }
-  });
+  }
   animationFrameId = requestAnimationFrame(draw);
 };
 

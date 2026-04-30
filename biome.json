@@ -1,5 +1,8 @@
 {
   "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "files": {
+    "ignore": [".nuxt", ".output", "app/assets/games", "public/static-games"]
+  },
   "organizeImports": {
     "enabled": true
   },

@@ -47,12 +47,12 @@ export const games: Game[] = [
   },
   {
     id: 4,
-    title: "Racing Neon",
-    shortDesc: "Course vue du dessus en JS",
+    title: "Street Fighter",
+    shortDesc: "Combat arcade en JS",
     longDesc:
-      "Pilote une voiture sur un circuit néon en évitant les obstacles. Contrôles simples, difficulté croissante. Codé avec l'API Canvas.",
-    icon: "🏎️",
-    link: "/games/racing-neon",
+      "Affronte ton adversaire dans un duel arcade inspiré des jeux de combat classiques. Contrôles simples, rounds rapides et action directe.",
+    icon: "🥊",
+    link: "/games/street-fighter",
     color: "#9b59b6",
   },
 ];
