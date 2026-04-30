@@ -32,7 +32,7 @@ export const games: Game[] = [
     longDesc:
       "Explore des donjons générés aléatoirement, collecte des trésors et affronte des monstres. Interface réactive construite avec React et hooks.",
     icon: "⚔️",
-    link: "#",
+    link: "/games/dungeon-quest",
     color: "#f39c12",
   },
   {

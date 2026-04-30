@@ -1,0 +1,129 @@
+* {
+  user-select: none;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0c1a 0%, #1a1a2e 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Courier New', 'VT323', monospace;
+  padding: 20px;
+}
+
+.game-wrapper {
+  background: #000000aa;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+}
+
+canvas {
+  display: block;
+  margin: 0 auto;
+  box-shadow: 0 0 0 3px #4a3f2c, 0 10px 25px black;
+  cursor: pointer;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+}
+
+.ui-panel {
+  margin-top: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  background: #0a0a1aaa;
+  padding: 12px 20px;
+  border-radius: 15px;
+  border: 1px solid #ffcc44;
+  backdrop-filter: blur(4px);
+}
+
+.stats {
+  display: flex;
+  gap: 25px;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.stat {
+  color: #ffd966;
+  background: #00000088;
+  padding: 5px 12px;
+  border-radius: 20px;
+}
+
+.stat span {
+  color: #ffaa44;
+  font-weight: bold;
+  font-size: 1.3rem;
+}
+
+.inventory {
+  color: #aaffdd;
+  font-size: 0.9rem;
+  background: #00000088;
+  padding: 5px 15px;
+  border-radius: 12px;
+  min-width: 180px;
+}
+
+#inventoryList {
+  color: #ffeeaa;
+  font-size: 0.85rem;
+  margin-top: 5px;
+}
+
+button {
+  background: #7a2e2e;
+  border: none;
+  font-family: monospace;
+  font-weight: bold;
+  font-size: 1rem;
+  padding: 8px 20px;
+  border-radius: 30px;
+  color: #ffecb3;
+  cursor: pointer;
+  transition: 0.1s linear;
+  box-shadow: 0 4px 0 #3a1515;
+}
+
+button:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #3a1515;
+}
+
+.message-log {
+  margin-top: 12px;
+  background: #010008cc;
+  border-left: 4px solid #ffaa33;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  color: #bbffcc;
+  font-family: monospace;
+  height: 65px;
+  overflow-y: auto;
+  border-radius: 8px;
+}
+
+@media (max-width: 700px) {
+  .stats {
+    font-size: 0.8rem;
+    gap: 10px;
+  }
+
+  .stat span {
+    font-size: 1rem;
+  }
+
+  .inventory {
+    font-size: 0.7rem;
+    min-width: 130px;
+  }
+}

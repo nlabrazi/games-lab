@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>⚔️ DUNGEON QUEST - Rogue-like Dungeon Crawler</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div class="game-wrapper">
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+    <div class="ui-panel">
+      <div class="stats">
+        <div class="stat">❤️ VIE: <span id="healthValue">0</span>/<span id="maxHealthValue">0</span></div>
+        <div class="stat">⚔️ DEGÂTS: <span id="damageValue">0</span></div>
+        <div class="stat">🛡️ DÉFENSE: <span id="defenseValue">0</span></div>
+        <div class="stat">🗡️ NIVEAU: <span id="floorValue">0</span></div>
+      </div>
+      <div class="inventory">
+        <div>🎒 INVENTAIRE:</div>
+        <div id="inventoryList"></div>
+      </div>
+      <button id="restartBtn">🔄 NOUVELLE AVENTURE</button>
+    </div>
+
+    <div id="messageLog" class="message-log"></div>
+  </div>
+
+  <script src="entities.js"></script>
+  <script src="dungeon.js"></script>
+  <script src="combat.js"></script>
+  <script src="loot.js"></script>
+  <script src="ui.js"></script>
+  <script src="game.js"></script>
+</body>
+
+</html>
