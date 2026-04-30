@@ -2,6 +2,7 @@
 
 let game = null;
 let clickAction = null;
+let isPaused = false;
 
 function initGame() {
     game = {
@@ -17,17 +18,19 @@ function initGame() {
     game.player.x = game.dungeon.playerStart.x;
     game.player.y = game.dungeon.playerStart.y;
     game.running = true;
+    isPaused = false;
     combatActive = false;
     currentEnemy = null;
     messageQueue = [];
     addMessage("🌟 AVENTURE COMMENCE ! Utilisez les FLÈCHES pour explorer.");
     addMessage(`🗡️ ${game.dungeon.enemies.length} ennemis rôdent dans les salles...`);
+    updatePauseButton();
     updateUI();
     drawGame();
 }
 
 function movePlayer(dx, dy) {
-    if (combatActive || !game.running) return;
+    if (isPaused || combatActive || !game.running) return;
 
     let newX = game.player.x + dx;
     let newY = game.player.y + dy;
@@ -91,9 +94,36 @@ function restartGame() {
     initGame();
 }
 
+function updatePauseButton() {
+    const pauseBtn = document.getElementById('pauseBtn');
+    if (pauseBtn) pauseBtn.innerText = isPaused ? '▶ REPRENDRE' : '⏸ PAUSE';
+}
+
+function setPaused(value) {
+    if (!game || !game.running) return;
+    isPaused = value;
+    updatePauseButton();
+    drawGame();
+}
+
+function togglePause() {
+    setPaused(!isPaused);
+}
+
 // Gestion clavier
 window.removeEventListener('keydown', null);
 window.addEventListener('keydown', (e) => {
+    if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+        if (!e.repeat) togglePause();
+        e.preventDefault();
+        return;
+    }
+
+    if (isPaused) {
+        e.preventDefault();
+        return;
+    }
+
     if (combatActive) {
         if (e.key === ' ' || e.key === 'Space') {
             playerAttack();
@@ -125,11 +155,11 @@ function setupCombatButtons() {
 
     let attackBtn = document.createElement('button');
     attackBtn.innerText = '⚔️ ATTAQUER (ESPACE)';
-    attackBtn.onclick = () => { if(combatActive) playerAttack(); drawGame(); };
+    attackBtn.onclick = () => { if(combatActive && !isPaused) playerAttack(); drawGame(); };
 
     let fleeBtn = document.createElement('button');
     fleeBtn.innerText = '🏃‍♂️ FUIR (F)';
-    fleeBtn.onclick = () => { fleeFromCombat(); drawGame(); };
+    fleeBtn.onclick = () => { if (!isPaused) fleeFromCombat(); drawGame(); };
 
     let healthWarning = document.createElement('span');
     healthWarning.id = 'combatHealth';
@@ -152,5 +182,6 @@ setInterval(() => {
 }, 100);
 
 document.getElementById('restartBtn').onclick = () => { restartGame(); };
+document.getElementById('pauseBtn').onclick = () => { togglePause(); };
 setupCombatButtons();
 initGame();

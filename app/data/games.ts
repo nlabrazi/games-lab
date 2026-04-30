@@ -42,7 +42,7 @@ export const games: Game[] = [
     longDesc:
       "Un puzzle game minimaliste avec système de score et niveaux progressifs. Gestion complète des collisions et animations fluides.",
     icon: "🧩",
-    link: "#",
+    link: "/games/puzzle-blocks",
     color: "#2ecc71",
   },
   {
@@ -52,7 +52,7 @@ export const games: Game[] = [
     longDesc:
       "Pilote une voiture sur un circuit néon en évitant les obstacles. Contrôles simples, difficulté croissante. Codé avec l'API Canvas.",
     icon: "🏎️",
-    link: "#",
+    link: "/games/racing-neon",
     color: "#9b59b6",
   },
 ];
