@@ -20,7 +20,7 @@ export default defineNuxtConfig({
         { charset: "utf-8" },
         { name: "viewport", content: "width=device-width, initial-scale=1" },
         {
-          hid: "description",
+          key: "description",
           name: "description",
           content: "Jeux rétro jouables dans le navigateur",
         },
@@ -32,6 +32,13 @@ export default defineNuxtConfig({
         {
           rel: "stylesheet",
           href: "https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap",
+        },
+      ],
+      script: [
+        {
+          src: "https://umami.nabster.dev/script.js",
+          defer: true,
+          "data-website-id": "1477bf65-b3e0-48dd-9e06-ac9bdc3a8f04",
         },
       ],
     },
