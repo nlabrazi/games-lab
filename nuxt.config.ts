@@ -12,7 +12,7 @@ export default defineNuxtConfig({
       dosGamesBaseUrl: "/api/dos-games",
       jsDosScriptUrl: "https://v8.js-dos.com/latest/js-dos.js",
       jsDosStyleUrl: "https://v8.js-dos.com/latest/js-dos.css",
-      jsDosPathPrefix: "https://v8.js-dos.com/latest/",
+      jsDosPathPrefix: "https://v8.js-dos.com/latest/emulators/",
     },
   },
   css: [
