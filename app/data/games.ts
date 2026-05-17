@@ -55,4 +55,13 @@ export const games: Game[] = [
     link: "/games/street-fighter",
     color: "#9b59b6",
   },
+  {
+    id: 5,
+    title: "Lands of Lore",
+    shortDesc: "comming soon",
+    longDesc: "comming soon",
+    icon: "🛡️",
+    link: "#",
+    color: "#3498db",
+  },
 ];
