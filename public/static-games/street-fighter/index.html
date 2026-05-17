@@ -13,6 +13,22 @@
 <body>
   <main>
     <canvas width="382" height="224"></canvas>
+    <div class="mobile-fight-controls" aria-label="Contrôles tactiles Street Fighter">
+      <div class="mobile-dpad">
+        <button class="mobile-fight-button" data-mobile-control="up" aria-label="Sauter">▲</button>
+        <button class="mobile-fight-button" data-mobile-control="left" aria-label="Reculer">◀</button>
+        <button class="mobile-fight-button" data-mobile-control="right" aria-label="Avancer">▶</button>
+        <button class="mobile-fight-button" data-mobile-control="down" aria-label="S'accroupir">▼</button>
+      </div>
+      <div class="mobile-attacks" aria-label="Attaques">
+        <button class="mobile-fight-button attack" data-mobile-control="lightPunch" aria-label="Poing léger">LP</button>
+        <button class="mobile-fight-button attack" data-mobile-control="mediumPunch" aria-label="Poing moyen">MP</button>
+        <button class="mobile-fight-button attack" data-mobile-control="heavyPunch" aria-label="Poing fort">HP</button>
+        <button class="mobile-fight-button attack kick" data-mobile-control="lightKick" aria-label="Pied léger">LK</button>
+        <button class="mobile-fight-button attack kick" data-mobile-control="mediumKick" aria-label="Pied moyen">MK</button>
+        <button class="mobile-fight-button attack kick" data-mobile-control="heavyKick" aria-label="Pied fort">HK</button>
+      </div>
+    </div>
   </main>
   <audio id="kensTheme" src="./public/sounds/kens-theme.ogg" preload="auto" loop></audio>
   <audio id="sound-fighter-land" src="./public/sounds/land.ogg" preload="auto"></audio>

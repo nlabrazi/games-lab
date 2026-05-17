@@ -8,7 +8,12 @@ import type { Game } from "@/data/games";
 export const useGames = () => {
   const selectedGame = useState<Game | null>("selectedGame", () => null);
 
-  const selectGame = (game: Game) => {
+  const selectGame = (game: Game | null | undefined) => {
+    if (!game) {
+      selectedGame.value = null;
+      return;
+    }
+
     selectedGame.value = game;
   };
 

@@ -13,7 +13,7 @@
         // MES JEUX</h2>
 
       <!-- Si un jeu est sélectionné, afficher le détail -->
-      <GameDetail v-if="selectedGame" :selected-game="selectedGame" @back="clearSelection" />
+      <GameDetail v-if="selectedGame?.title" :selected-game="selectedGame" @back="clearSelection" />
       <!-- Sinon afficher la grille -->
       <GameGrid v-else @select="handleGameSelect" />
     </section>
@@ -60,8 +60,14 @@ import type { Game } from "~/data/games";
 
 const { selectedGame, selectGame, clearSelection } = useGames();
 
-const handleGameSelect = (game: Game) => {
+const handleGameSelect = (game?: Game) => {
+  if (!game) {
+    clearSelection();
+    return;
+  }
+
   if (game.link !== "#") {
+    clearSelection();
     return navigateTo(game.link);
   }
 

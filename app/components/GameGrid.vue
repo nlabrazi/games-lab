@@ -3,7 +3,7 @@
 -->
 <template>
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-    <GameCard v-for="game in games" :key="game.id" :game="game" @select="$emit('select', game)" />
+    <GameCard v-for="game in games" :key="game.id" :game="game" @select="$emit('select', $event)" />
   </div>
 </template>
 

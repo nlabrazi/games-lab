@@ -22,6 +22,9 @@ const gamepadThumbstickAxes = [
 const heldKeys = new Set();
 const pressedKeys = new Set();
 const pressedKeysControlHistory = [new Set(), new Set()];
+const heldVirtualControls = [new Set(), new Set()];
+const pressedVirtualControls = [new Set(), new Set()];
+const pressedVirtualControlsHistory = [new Set(), new Set()];
 const mappedKeys = controls
 	.map(({ keyboard }) => Object.values(keyboard))
 	.flat();
@@ -45,6 +48,17 @@ const isPressed = (code) => {
 	return false;
 };
 
+const isVirtualPressed = (id, code) => {
+	if (
+		heldVirtualControls[id].has(code) &&
+		!pressedVirtualControls[id].has(code)
+	) {
+		pressedVirtualControls[id].add(code);
+		return true;
+	}
+	return false;
+};
+
 const isPressedControlHistory = (id, code) => {
 	const controlKeyId = controls[id].keyboard[code];
 	const controlButtonId = controls[id].gamepad[code];
@@ -59,6 +73,12 @@ const isPressedControlHistory = (id, code) => {
 		!pressedKeysControlHistory[id].has(controlButtonId)
 	) {
 		pressedKeysControlHistory[id].add(controlButtonId);
+		return true;
+	} else if (
+		heldVirtualControls[id].has(code) &&
+		!pressedVirtualControlsHistory[id].has(code)
+	) {
+		pressedVirtualControlsHistory[id].add(code);
 		return true;
 	}
 	return false;
@@ -86,6 +106,19 @@ const handleKeyUp = (event) => {
 export const registerKeyboardEvents = () => {
 	window.addEventListener('keydown', handleKeyDown);
 	window.addEventListener('keyup', handleKeyUp);
+};
+
+export const setVirtualControl = (id, code, isHeld) => {
+	if (!heldVirtualControls[id]) return;
+
+	if (isHeld) {
+		heldVirtualControls[id].add(code);
+		return;
+	}
+
+	heldVirtualControls[id].delete(code);
+	pressedVirtualControls[id].delete(code);
+	pressedVirtualControlsHistory[id].delete(code);
 };
 
 const handleGamepadConnected = (event) => {
@@ -139,6 +172,7 @@ export const registerGamepadEvents = () => {
 export const isLeft = (id) => {
 	if (gamepadThumbstickAxes[id].x < -1 * CONTROLLER_DEADZONE) return true;
 	return (
+		heldVirtualControls[id].has(Control.LEFT) ||
 		heldKeys.has(controls[id].keyboard[Control.LEFT]) ||
 		heldGamepadButtons[id].has(controls[id].gamepad[Control.LEFT])
 	);
@@ -148,6 +182,7 @@ export const isUp = (id) => {
 	if (gamepadThumbstickAxes[id].y < -1 * CONTROLLER_DEADZONE) return true;
 
 	return (
+		heldVirtualControls[id].has(Control.UP) ||
 		heldKeys.has(controls[id].keyboard[Control.UP]) ||
 		heldGamepadButtons[id].has(controls[id].gamepad[Control.UP])
 	);
@@ -157,6 +192,7 @@ export const isRight = (id) => {
 	if (gamepadThumbstickAxes[id].x > CONTROLLER_DEADZONE) return true;
 
 	return (
+		heldVirtualControls[id].has(Control.RIGHT) ||
 		heldKeys.has(controls[id].keyboard[Control.RIGHT]) ||
 		heldGamepadButtons[id].has(controls[id].gamepad[Control.RIGHT])
 	);
@@ -166,6 +202,7 @@ export const isDown = (id) => {
 	if (gamepadThumbstickAxes[id].y > CONTROLLER_DEADZONE) return true;
 
 	return (
+		heldVirtualControls[id].has(Control.DOWN) ||
 		heldKeys.has(controls[id].keyboard[Control.DOWN]) ||
 		heldGamepadButtons[id].has(controls[id].gamepad[Control.DOWN])
 	);
@@ -186,6 +223,7 @@ export const isKeyPressed = (id, code, forControlHistory) => {
 	if (forControlHistory) return isPressedControlHistory(id, code);
 
 	return (
+		isVirtualPressed(id, code) ||
 		isButtonPressed(id, controls[id].gamepad[code]) ||
 		isPressed(controls[id].keyboard[code])
 	);

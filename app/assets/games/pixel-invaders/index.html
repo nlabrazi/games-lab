@@ -14,15 +14,19 @@
     body {
       background: linear-gradient(145deg, #03050b 0%, #0a0f1f 100%);
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       justify-content: center;
       align-items: center;
       font-family: 'Courier New', 'VT323', monospace;
       margin: 0;
       padding: 20px;
+      overflow: hidden;
+      touch-action: none;
     }
 
     .game-container {
+      position: relative;
       background: #000000aa;
       border-radius: 32px;
       padding: 20px 20px 24px;
@@ -38,6 +42,11 @@
       image-rendering: pixelated;
       image-rendering: pixelated;
       cursor: default;
+      max-width: calc(100vw - 40px);
+      max-height: calc(100dvh - 150px);
+      aspect-ratio: 800 / 550;
+      object-fit: contain;
+      touch-action: none;
     }
 
     .info-panel {
@@ -115,6 +124,40 @@
       color: #bbffdd;
     }
 
+    .mobile-controls {
+      display: none;
+    }
+
+    .mobile-control,
+    .mobile-action {
+      width: 56px;
+      height: 56px;
+      border: 1px solid #9df7e066;
+      border-radius: 50%;
+      background: rgba(5, 12, 22, 0.42);
+      color: #dfffee;
+      font: 700 1.15rem 'Courier New', monospace;
+      box-shadow: 0 0 14px rgba(51, 255, 204, 0.18);
+      backdrop-filter: blur(6px);
+      touch-action: none;
+    }
+
+    .mobile-action {
+      width: 72px;
+      height: 72px;
+      border-color: #ffee8888;
+      color: #fff0a8;
+      box-shadow: 0 0 18px rgba(255, 221, 120, 0.18);
+    }
+
+    .mobile-control:active,
+    .mobile-action:active,
+    .mobile-control.is-active,
+    .mobile-action.is-active {
+      transform: translateY(1px) scale(0.96);
+      background: rgba(28, 76, 88, 0.62);
+    }
+
     @media (max-width: 550px) {
 
       .score-box div,
@@ -133,6 +176,97 @@
       .info-panel {
         gap: 8px;
         justify-content: center;
+      }
+    }
+
+    @media (hover: none), (pointer: coarse) {
+      body {
+        padding: 0;
+      }
+
+      .game-container {
+        width: 100vw;
+        height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border-radius: 0;
+        background: #03050b;
+        box-shadow: none;
+      }
+
+      canvas {
+        width: min(100vw, 145.45dvh);
+        height: auto;
+        max-width: none;
+        max-height: 100dvh;
+      }
+
+      .info-panel {
+        position: fixed;
+        top: 8px;
+        left: 8px;
+        right: 8px;
+        z-index: 4;
+        margin: 0;
+        gap: 6px;
+        justify-content: space-between;
+        padding: 6px;
+        border-radius: 16px;
+        pointer-events: none;
+        background: rgba(0, 0, 0, 0.34);
+      }
+
+      .score-box,
+      .high-box,
+      .level-box {
+        padding: 4px 8px;
+        font-size: 0.68rem;
+        background: rgba(0, 0, 0, 0.46);
+      }
+
+      .score-box div,
+      .high-box div,
+      .level-box div {
+        margin-left: 4px;
+        font-size: 0.8rem;
+      }
+
+      .restart-btn {
+        width: 42px;
+        height: 42px;
+        padding: 0;
+        font-size: 1rem;
+        border-radius: 50%;
+        pointer-events: auto;
+      }
+
+      .controls-tip {
+        display: none;
+      }
+
+      .mobile-controls {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: max(14px, env(safe-area-inset-bottom));
+        z-index: 5;
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        padding: 0 max(18px, env(safe-area-inset-left)) 0 max(18px, env(safe-area-inset-right));
+        pointer-events: none;
+      }
+
+      .mobile-move {
+        display: flex;
+        gap: 14px;
+      }
+
+      .mobile-control,
+      .mobile-action {
+        pointer-events: auto;
       }
     }
   </style>
@@ -155,6 +289,13 @@
         <button class="restart-btn" id="restartButton">🔄 RESTART</button>
         <button class="restart-btn pause-btn" id="pauseButton">⏸ PAUSE</button>
         <div class="controls-tip">◀ ▶ [ESPACE] ou ▲ pour TIRER · [P] ou [ECHAP] PAUSE</div>
+      </div>
+      <div class="mobile-controls" aria-label="Contrôles tactiles Pixel Invaders">
+        <div class="mobile-move">
+          <button class="mobile-control" data-hold-control="left" aria-label="Aller à gauche">◀</button>
+          <button class="mobile-control" data-hold-control="right" aria-label="Aller à droite">▶</button>
+        </div>
+        <button class="mobile-action" data-hold-control="fire" aria-label="Tirer">▲</button>
       </div>
     </div>
   </div>
@@ -201,6 +342,8 @@
       // gestion game over restart
       let requestId = null;
       const pauseButton = document.getElementById('pauseButton');
+      const restartButton = document.getElementById('restartButton');
+      const prefersTouchControls = window.matchMedia('(hover: none), (pointer: coarse)').matches;
 
       // ---------- HIGHSCORE (stockage local storage) ----------
       function loadHighScore() {
@@ -653,7 +796,10 @@
         rightPressed = false;
         spacePressed = false;
         canvas.style.cursor = isPaused ? 'default' : 'none';
-        pauseButton.innerText = isPaused ? '▶ REPRENDRE' : '⏸ PAUSE';
+        pauseButton.innerText = isPaused
+          ? (prefersTouchControls ? '▶' : '▶ REPRENDRE')
+          : (prefersTouchControls ? 'Ⅱ' : '⏸ PAUSE');
+        pauseButton.setAttribute('aria-label', isPaused ? 'Reprendre' : 'Pause');
       }
 
       function togglePause() {
@@ -687,7 +833,49 @@
       window.addEventListener('keyup', (e) => keyHandler(e, false));
 
       // restart via bouton
-      document.getElementById('restartButton').addEventListener('click', () => {
+      function bindHoldControl(button, onPress, onRelease) {
+        const release = (event) => {
+          event.preventDefault();
+          button.classList.remove('is-active');
+          onRelease();
+          if (event.pointerId !== undefined && button.hasPointerCapture?.(event.pointerId)) {
+            button.releasePointerCapture(event.pointerId);
+          }
+        };
+
+        button.addEventListener('pointerdown', (event) => {
+          event.preventDefault();
+          button.setPointerCapture?.(event.pointerId);
+          button.classList.add('is-active');
+          onPress();
+        });
+        button.addEventListener('pointerup', release);
+        button.addEventListener('pointercancel', release);
+        button.addEventListener('lostpointercapture', () => {
+          button.classList.remove('is-active');
+          onRelease();
+        });
+      }
+
+      document.querySelectorAll('[data-hold-control]').forEach((button) => {
+        const control = button.dataset.holdControl;
+        bindHoldControl(button, () => {
+          if (control === 'left') leftPressed = true;
+          if (control === 'right') rightPressed = true;
+          if (control === 'fire') spacePressed = true;
+        }, () => {
+          if (control === 'left') leftPressed = false;
+          if (control === 'right') rightPressed = false;
+          if (control === 'fire') spacePressed = false;
+        });
+      });
+
+      if (prefersTouchControls) {
+        restartButton.innerText = '↻';
+        restartButton.setAttribute('aria-label', 'Nouvelle partie');
+      }
+
+      restartButton.addEventListener('click', () => {
         // reset complet
         initGame();
         gameRunning = true;
