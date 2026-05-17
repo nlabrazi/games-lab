@@ -1,17 +1,21 @@
 * {
   user-select: none;
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
+  min-height: 100dvh;
   background: linear-gradient(135deg, #0a0c1a 0%, #1a1a2e 100%);
   display: flex;
   justify-content: center;
   align-items: center;
   font-family: 'Courier New', 'VT323', monospace;
   padding: 20px;
+  overflow: hidden;
+  touch-action: none;
 }
 
 .game-wrapper {
@@ -29,6 +33,11 @@ canvas {
   cursor: pointer;
   image-rendering: crisp-edges;
   image-rendering: pixelated;
+  max-width: calc(100vw - 40px);
+  max-height: calc(100dvh - 180px);
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+  touch-action: none;
 }
 
 .ui-panel {
@@ -92,6 +101,7 @@ button {
   cursor: pointer;
   transition: 0.1s linear;
   box-shadow: 0 4px 0 #3a1515;
+  touch-action: none;
 }
 
 button:active {
@@ -112,6 +122,41 @@ button:active {
   border-radius: 8px;
 }
 
+.mobile-controls {
+  display: none;
+}
+
+.mobile-control {
+  width: 54px;
+  height: 54px;
+  border: 1px solid #ffdd8880;
+  border-radius: 50%;
+  background: rgba(12, 8, 8, 0.46);
+  color: #fff1ba;
+  font: 700 1.05rem monospace;
+  box-shadow: 0 0 14px rgba(255, 204, 68, 0.16);
+  backdrop-filter: blur(6px);
+  touch-action: none;
+}
+
+.mobile-control.action {
+  width: 64px;
+  height: 64px;
+  border-color: #ffb066aa;
+  color: #ffe2a0;
+}
+
+.mobile-control.secondary {
+  border-color: #9ee8ff88;
+  color: #d9f7ff;
+}
+
+.mobile-control:active,
+.mobile-control.is-active {
+  transform: translateY(1px) scale(0.96);
+  background: rgba(94, 42, 30, 0.68);
+}
+
 @media (max-width: 700px) {
   .stats {
     font-size: 0.8rem;
@@ -125,5 +170,157 @@ button:active {
   .inventory {
     font-size: 0.7rem;
     min-width: 130px;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  body {
+    padding: 0;
+  }
+
+  .game-wrapper {
+    width: 100vw;
+    height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 0;
+    background: #0a0c18;
+    box-shadow: none;
+  }
+
+  canvas {
+    width: min(100vw, 133.333dvh);
+    height: auto;
+    max-width: none;
+    max-height: 100dvh;
+    box-shadow: none;
+  }
+
+  .ui-panel {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    z-index: 4;
+    margin: 0;
+    gap: 6px;
+    justify-content: space-between;
+    padding: 6px;
+    border-radius: 16px;
+    background: rgba(10, 10, 26, 0.4);
+    border-color: rgba(255, 204, 68, 0.35);
+    pointer-events: none;
+  }
+
+  .stats {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    font-size: 0.62rem;
+  }
+
+  .stat {
+    overflow: hidden;
+    padding: 4px 6px;
+    border-radius: 10px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    background: rgba(0, 0, 0, 0.45);
+  }
+
+  .stat span {
+    font-size: 0.76rem;
+  }
+
+  .inventory,
+  #combatBtnGroup {
+    display: none !important;
+  }
+
+  .ui-panel > button {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 1rem;
+    pointer-events: auto;
+  }
+
+  .message-log {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: calc(102px + env(safe-area-inset-bottom));
+    z-index: 4;
+    height: 48px;
+    margin: 0;
+    border-left-width: 2px;
+    padding: 6px 8px;
+    font-size: 0.62rem;
+    background: rgba(1, 0, 8, 0.42);
+    pointer-events: none;
+  }
+
+  .mobile-controls {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    z-index: 5;
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    padding: 0 max(18px, env(safe-area-inset-left)) 0 max(18px, env(safe-area-inset-right));
+    pointer-events: none;
+  }
+
+  .mobile-dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 54px);
+    grid-template-rows: repeat(3, 54px);
+    gap: 4px;
+    pointer-events: none;
+  }
+
+  .mobile-dpad [data-mobile-move="up"] {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .mobile-dpad [data-mobile-move="left"] {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .mobile-dpad [data-mobile-move="right"] {
+    grid-column: 3;
+    grid-row: 2;
+  }
+
+  .mobile-dpad [data-mobile-move="down"] {
+    grid-column: 2;
+    grid-row: 3;
+  }
+
+  .mobile-combat-actions {
+    display: none;
+    gap: 12px;
+    align-items: end;
+  }
+
+  body.is-combat .mobile-dpad {
+    opacity: 0.26;
+  }
+
+  body.is-combat .mobile-combat-actions {
+    display: flex;
+  }
+
+  .mobile-control {
+    pointer-events: auto;
   }
 }

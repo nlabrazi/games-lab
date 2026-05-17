@@ -26,6 +26,8 @@ function drawGame() {
     const ctx = canvas.getContext('2d');
     const cellW = canvas.width / game.dungeon.width;
     const cellH = canvas.height / game.dungeon.height;
+    document.body.classList.toggle('is-combat', Boolean(combatActive));
+    document.body.classList.toggle('is-paused', Boolean(isPaused));
 
     ctx.fillStyle = '#0a0c18';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -88,7 +90,7 @@ function drawGame() {
         ctx.fillText(`COMBAT vs ${currentEnemy.name}  [PV:${currentEnemy.hp}]`, 20, 45);
         ctx.fillStyle = '#aaffaa';
         ctx.font = '14px monospace';
-        ctx.fillText(`Cliquez sur ATTAQUER (bouton)`, 20, 75);
+        ctx.fillText(`Attaquez ou tentez la fuite`, 20, 75);
     }
 
     if (isPaused) {

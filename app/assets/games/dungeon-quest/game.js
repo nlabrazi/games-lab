@@ -3,6 +3,7 @@
 let game = null;
 let clickAction = null;
 let isPaused = false;
+const prefersTouchControls = window.matchMedia('(hover: none), (pointer: coarse)').matches;
 
 function initGame() {
     game = {
@@ -96,7 +97,12 @@ function restartGame() {
 
 function updatePauseButton() {
     const pauseBtn = document.getElementById('pauseBtn');
-    if (pauseBtn) pauseBtn.innerText = isPaused ? '▶ REPRENDRE' : '⏸ PAUSE';
+    if (pauseBtn) {
+        pauseBtn.innerText = isPaused
+            ? (prefersTouchControls ? '▶' : '▶ REPRENDRE')
+            : (prefersTouchControls ? 'Ⅱ' : '⏸ PAUSE');
+        pauseBtn.setAttribute('aria-label', isPaused ? 'Reprendre' : 'Pause');
+    }
 }
 
 function setPaused(value) {
@@ -154,11 +160,11 @@ function setupCombatButtons() {
     div.style.alignItems = 'center';
 
     let attackBtn = document.createElement('button');
-    attackBtn.innerText = '⚔️ ATTAQUER (ESPACE)';
+    attackBtn.innerText = '⚔ ATTAQUER';
     attackBtn.onclick = () => { if(combatActive && !isPaused) playerAttack(); drawGame(); };
 
     let fleeBtn = document.createElement('button');
-    fleeBtn.innerText = '🏃‍♂️ FUIR (F)';
+    fleeBtn.innerText = '↷ FUIR';
     fleeBtn.onclick = () => { if (!isPaused) fleeFromCombat(); drawGame(); };
 
     let healthWarning = document.createElement('span');
@@ -171,6 +177,71 @@ function setupCombatButtons() {
     panel.appendChild(div);
 }
 
+function bindMobileRepeat(button, callback) {
+    let delayId = null;
+    let intervalId = null;
+    const stop = (event) => {
+        event?.preventDefault();
+        button.classList.remove('is-active');
+        clearTimeout(delayId);
+        clearInterval(intervalId);
+        delayId = null;
+        intervalId = null;
+        if (event?.pointerId !== undefined && button.hasPointerCapture?.(event.pointerId)) {
+            button.releasePointerCapture(event.pointerId);
+        }
+    };
+
+    button.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        button.setPointerCapture?.(event.pointerId);
+        button.classList.add('is-active');
+        callback();
+        delayId = setTimeout(() => {
+            intervalId = setInterval(callback, 130);
+        }, 230);
+    });
+    button.addEventListener('pointerup', stop);
+    button.addEventListener('pointercancel', stop);
+    button.addEventListener('lostpointercapture', () => stop());
+}
+
+function bindMobileTap(button, callback) {
+    button.addEventListener('pointerdown', (event) => {
+        event.preventDefault();
+        button.classList.add('is-active');
+        callback();
+    });
+    button.addEventListener('pointerup', () => button.classList.remove('is-active'));
+    button.addEventListener('pointercancel', () => button.classList.remove('is-active'));
+}
+
+function setupMobileControls() {
+    const moves = {
+        up: [0, -1],
+        down: [0, 1],
+        left: [-1, 0],
+        right: [1, 0]
+    };
+
+    document.querySelectorAll('[data-mobile-move]').forEach((button) => {
+        const direction = button.dataset.mobileMove;
+        bindMobileRepeat(button, () => {
+            if (!combatActive && moves[direction]) movePlayer(...moves[direction]);
+        });
+    });
+
+    document.querySelectorAll('[data-mobile-action]').forEach((button) => {
+        const action = button.dataset.mobileAction;
+        bindMobileTap(button, () => {
+            if (isPaused || !combatActive) return;
+            if (action === 'attack') playerAttack();
+            if (action === 'flee') fleeFromCombat();
+            drawGame();
+        });
+    });
+}
+
 // Mettre à jour l'affichage combat
 setInterval(() => {
     if (combatActive && currentEnemy) {
@@ -181,7 +252,14 @@ setInterval(() => {
     }
 }, 100);
 
-document.getElementById('restartBtn').onclick = () => { restartGame(); };
-document.getElementById('pauseBtn').onclick = () => { togglePause(); };
+const restartBtn = document.getElementById('restartBtn');
+const pauseBtn = document.getElementById('pauseBtn');
+if (prefersTouchControls && restartBtn) {
+    restartBtn.innerText = '↻';
+    restartBtn.setAttribute('aria-label', 'Nouvelle aventure');
+}
+restartBtn.onclick = () => { restartGame(); };
+pauseBtn.onclick = () => { togglePause(); };
 setupCombatButtons();
+setupMobileControls();
 initGame();
