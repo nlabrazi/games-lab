@@ -6,6 +6,15 @@ export default defineNuxtConfig({
   compatibilityDate: "2026-04-22",
   devtools: { enabled: true },
   modules: ["@nuxtjs/tailwindcss"],
+  runtimeConfig: {
+    dosGamesDir: "public/dos-games",
+    public: {
+      dosGamesBaseUrl: "/api/dos-games",
+      jsDosScriptUrl: "https://v8.js-dos.com/latest/js-dos.js",
+      jsDosStyleUrl: "https://v8.js-dos.com/latest/js-dos.css",
+      jsDosPathPrefix: "https://v8.js-dos.com/latest/",
+    },
+  },
   css: [
     "~/assets/css/base.css",
     "~/assets/css/crt.css",
