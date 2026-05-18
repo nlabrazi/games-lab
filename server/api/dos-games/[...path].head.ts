@@ -4,5 +4,5 @@ export default defineEventHandler(async (event) => {
   const { size } = await resolveDosGameBundle(event);
   setDosGameBundleHeaders(event, size);
 
-  return null;
+  return "";
 });
