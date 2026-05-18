@@ -11,4 +11,4 @@ services:
       - NODE_ENV=production
       - DOS_GAMES_DIR=/app/dos-games
     volumes:
-      - ./public/dos-games:/app/dos-games:ro
+      - ./local/dos-games:/app/dos-games:ro

@@ -1,3 +1,5 @@
+const defaultDosGamesDir = import.meta.dev ? "local/dos-games" : "public/dos-games";
+
 /*
   Configuration Nuxt 4 : activation de Tailwind, import global des CSS,
   meta tags rétro et police Google.
@@ -7,7 +9,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ["@nuxtjs/tailwindcss"],
   runtimeConfig: {
-    dosGamesDir: "public/dos-games",
+    dosGamesDir: defaultDosGamesDir,
     public: {
       dosGamesBaseUrl: "/api/dos-games",
       jsDosScriptUrl: "https://v8.js-dos.com/latest/js-dos.js",
