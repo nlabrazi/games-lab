@@ -4,3 +4,4 @@ node_modules
 dist
 .git
 public/dos-games
+local/dos-games

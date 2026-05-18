@@ -12,7 +12,7 @@ interface DosOptions {
   scaleControls?: number;
   noCloud?: boolean;
   noNetworking?: boolean;
-  onEvent?: (event: string, arg?: unknown) => void;
+  onEvent?: (event: "emu-ready" | "ci-ready" | "bnd-play" | string, arg?: unknown) => void;
 }
 
 interface DosInstance {
@@ -120,7 +120,7 @@ const startPlayer = async () => {
       noCloud: true,
       noNetworking: true,
       onEvent: (event) => {
-        if (event === "ci-ready") {
+        if (event === "bnd-play" || event === "emu-ready" || event === "ci-ready") {
           isReady.value = true;
           statusMessage.value = "";
         }
@@ -142,8 +142,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="relative h-full min-h-[calc(100vh-57px)] bg-black">
-    <div ref="playerElement" class="h-full min-h-[calc(100vh-57px)] w-full" :aria-label="title" />
+  <section class="dos-player-shell relative h-full min-h-[calc(100vh-57px)] overflow-hidden bg-black">
+    <div
+      ref="playerElement"
+      class="dos-player h-full min-h-[calc(100vh-57px)] w-full"
+      data-theme="dark"
+      :aria-label="title" />
 
     <div
       v-if="statusMessage || errorMessage"
@@ -161,3 +165,69 @@ onBeforeUnmount(() => {
     <span v-if="isReady" class="sr-only">Lecteur MS-DOS pret</span>
   </section>
 </template>
+
+<style scoped>
+.dos-player-shell,
+.dos-player {
+  background: #000;
+}
+
+.dos-player-shell :deep(.jsdos-rso) {
+  --b1: 0 0% 0%;
+  --b2: 220 22% 8%;
+  --b3: 220 22% 10%;
+  --bc: 180 100% 86%;
+  --p: 178 72% 46%;
+  --pf: 178 72% 36%;
+  --pc: 0 0% 100%;
+  --a: 178 72% 46%;
+  --af: 178 72% 36%;
+  --ac: 0 0% 100%;
+  --n: 220 22% 10%;
+  --nc: 180 100% 86%;
+  width: 100%;
+  min-height: calc(100vh - 57px);
+  height: 100%;
+  background: #000 !important;
+  color-scheme: dark;
+}
+
+.dos-player-shell :deep(.jsdos-rso .window),
+.dos-player-shell :deep(.jsdos-rso .frame-root),
+.dos-player-shell :deep(.jsdos-rso .emulator-root) {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: calc(100vh - 57px);
+  background: #000 !important;
+}
+
+.dos-player-shell :deep(.jsdos-rso .window .background-image),
+.dos-player-shell :deep(.jsdos-rso .window .background-image::after) {
+  background: #000 !important;
+  opacity: 0 !important;
+}
+
+.dos-player-shell :deep(.jsdos-rso .frame),
+.dos-player-shell :deep(.jsdos-rso .pre-run-window),
+.dos-player-shell :deep(.jsdos-rso .settings-frame),
+.dos-player-shell :deep(.jsdos-rso .prerun-frame) {
+  background: #000 !important;
+  color: #dff;
+}
+
+.dos-player-shell :deep(.jsdos-rso textarea) {
+  background: #050814 !important;
+  color: #dff;
+  resize: none;
+}
+
+.dos-player-shell :deep(.jsdos-rso .emulator-canvas),
+.dos-player-shell :deep(.jsdos-rso canvas) {
+  max-width: none;
+}
+
+.dos-player-shell :deep(.jsdos-rso .emulator-click-to-start-overlay) {
+  background: rgb(0 0 0 / 0.65);
+}
+</style>

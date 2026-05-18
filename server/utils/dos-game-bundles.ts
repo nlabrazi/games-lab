@@ -1,5 +1,6 @@
 import { stat } from "node:fs/promises";
 import { extname, resolve, sep } from "node:path";
+import process from "node:process";
 import { type H3Event, createError, getRouterParam, setHeader } from "h3";
 
 const allowedExtensions = new Set([".jsdos"]);

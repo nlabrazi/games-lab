@@ -25,3 +25,5 @@ logs
 
 # DOS
 /public/dos-games
+/local/dos-games/*
+!/local/dos-games/.gitkeep
