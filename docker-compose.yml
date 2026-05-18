@@ -11,3 +11,6 @@ services:
       - '3000:3000'
     environment:
       - NODE_ENV=production
+      - DOS_GAMES_DIR=/app/dos-games
+    volumes:
+      - ./public/dos-games:/app/dos-games:ro
