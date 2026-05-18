@@ -3,3 +3,4 @@ node_modules
 .output
 dist
 .git
+public/dos-games
