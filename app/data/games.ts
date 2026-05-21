@@ -62,7 +62,7 @@ export const games: Game[] = [
     longDesc:
       "Un lanceur generique pour jouer aux bundles MS-DOS heberges sur le VPS. Lands of Lore est le premier jeu branche, les suivants pourront utiliser la meme page.",
     icon: "💾",
-    link: "/games/ms-dos?game=lands-of-lore",
+    link: "/games/ms-dos/lands-of-lore",
     color: "#3498db",
   },
 ];

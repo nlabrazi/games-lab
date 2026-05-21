@@ -151,3 +151,6 @@ export const dosGames: DosGame[] = [
 
 export const getDosGame = (slug?: string | null) =>
   dosGames.find((game) => game.slug === slug) ?? dosGames[0];
+
+export const findDosGame = (slug?: string | null) =>
+  typeof slug === "string" ? dosGames.find((game) => game.slug === slug) : undefined;

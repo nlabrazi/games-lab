@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dosGames, getDosGame } from "../../app/data/dosGames";
+import { dosGames, findDosGame, getDosGame } from "../../app/data/dosGames";
 
 describe("dosGames catalog", () => {
   it("keeps slugs unique and bundles compatible with the DOS endpoint", () => {
@@ -17,5 +17,11 @@ describe("dosGames catalog", () => {
     expect(getDosGame("doom")?.title).toBe("Doom");
     expect(getDosGame("unknown-game")).toBe(dosGames[0]);
     expect(getDosGame(null)).toBe(dosGames[0]);
+  });
+
+  it("can look up a game without fallback for route validation", () => {
+    expect(findDosGame("lands-of-lore")?.status).toBe("available");
+    expect(findDosGame("unknown-game")).toBeUndefined();
+    expect(findDosGame(null)).toBeUndefined();
   });
 });
