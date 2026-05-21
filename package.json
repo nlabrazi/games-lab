@@ -15,8 +15,8 @@
     "format": "biome format . --write"
   },
   "dependencies": {
-    "nuxt": "^4.4.2",
-    "vue": "^3.5.33"
+    "nuxt": "4.4.2",
+    "vue": "3.5.33"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

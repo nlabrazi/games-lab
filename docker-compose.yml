@@ -3,12 +3,20 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: games-lab
+      target: dev
+    image: games-lab-dev
     container_name: games-lab
     ports:
-      - '3000:3000'
+      - "3000:3000"
     environment:
-      - NODE_ENV=production
-      - DOS_GAMES_DIR=/app/dos-games
+      NODE_ENV: development
+      NUXT_HOST: 0.0.0.0
+      NUXT_PORT: 3000
+      DOS_GAMES_DIR: /app/local/dos-games
+      CHOKIDAR_USEPOLLING: "true"
     volumes:
-      - ./local/dos-games:/app/dos-games:ro
+      - .:/app
+      - games-lab-node-modules:/app/node_modules
+
+volumes:
+  games-lab-node-modules:
