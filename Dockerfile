@@ -8,6 +8,7 @@ RUN npm ci
 
 COPY . .
 
+RUN npm run test
 RUN npm run build
 
 # Étape 2 : serveur de production (Node.js)
