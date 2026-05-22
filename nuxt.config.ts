@@ -12,6 +12,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     dosGamesDir: defaultDosGamesDir,
     dosSavesDir: defaultDosSavesDir,
+    dosSavesApiToken: process.env.DOS_SAVES_API_TOKEN ?? "",
     public: {
       dosGamesBaseUrl: "/api/dos-games",
       jsDosScriptUrl: "https://v8.js-dos.com/latest/js-dos.js",
