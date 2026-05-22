@@ -1,12 +1,12 @@
 import { createError, getRequestHeader, readRawBody, setHeader } from "h3";
-import { requireDosSaveApiAccess } from "../../../utils/dos-save-auth";
-import { resolveDosSaveDescriptor } from "../../../utils/dos-save-requests";
-import { maxDosSaveBytes, writeDosSave } from "../../../utils/dos-save-storage";
+import { maxDosSaveBytes, writeDosSave } from "../../utils/dos-save-storage";
+import { resolveUserDosSaveDescriptor } from "../../utils/dos-user-save-requests";
+import { requireSameOriginRequest } from "../../utils/request-origin";
 
 const allowedContentType = "application/octet-stream";
 
 export default defineEventHandler(async (event) => {
-  requireDosSaveApiAccess(event);
+  requireSameOriginRequest(event);
 
   const contentType = getRequestHeader(event, "content-type")?.split(";")[0]?.trim();
 
@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const descriptor = resolveDosSaveDescriptor(event);
+  const descriptor = resolveUserDosSaveDescriptor(event);
   const metadata = await writeDosSave(event, descriptor, payload);
 
   setHeader(event, "cache-control", "no-store");
@@ -43,7 +43,6 @@ export default defineEventHandler(async (event) => {
   return {
     saved: true,
     gameSlug: descriptor.gameSlug,
-    slotId: descriptor.slotId,
     size: metadata.size,
     updatedAt: metadata.updatedAt.toISOString(),
   };

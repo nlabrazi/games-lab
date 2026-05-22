@@ -16,8 +16,20 @@ interface DosOptions {
 }
 
 interface DosInstance {
+  layers?: {
+    save?: () => Promise<void>;
+  };
   save?: () => Promise<boolean>;
   stop?: () => Promise<void>;
+}
+
+interface AuthUser {
+  username: "admin" | "guest";
+}
+
+interface AuthSessionResponse {
+  authenticated: boolean;
+  user: AuthUser | null;
 }
 
 declare global {
@@ -28,6 +40,7 @@ declare global {
 
 const props = defineProps<{
   bundleUrl: string;
+  gameSlug: string;
   title: string;
 }>();
 
@@ -36,9 +49,22 @@ const playerElement = ref<HTMLDivElement | null>(null);
 const statusMessage = ref("Chargement du lecteur DOS...");
 const errorMessage = ref("");
 const isReady = ref(false);
+const authUser = ref<AuthUser | null>(null);
+const isLoginDialogOpen = ref(false);
+const loginUsername = ref<AuthUser["username"]>("admin");
+const loginPassword = ref("");
+const loginError = ref("");
+const isLoggingIn = ref(false);
+const isSavingToVps = ref(false);
+const saveMessage = ref("");
+const saveError = ref("");
+const shouldSaveAfterLogin = ref(false);
 
 let dosInstance: DosInstance | null = null;
 let jsDosAssetsPromise: Promise<void> | null = null;
+
+const jsDosSaveDatabaseName = "js-dos-cache (emulators-ui-saves)";
+const jsDosSaveStoreName = "files";
 
 const scriptUrl = computed(() => String(config.public.jsDosScriptUrl));
 const styleUrl = computed(() => String(config.public.jsDosStyleUrl));
@@ -90,6 +116,125 @@ const loadJsDosAssets = () => {
   return jsDosAssetsPromise;
 };
 
+const getErrorMessage = (error: unknown, fallbackMessage: string) =>
+  error instanceof Error ? error.message : fallbackMessage;
+
+const openJsDosSaveDatabase = () =>
+  new Promise<IDBDatabase>((resolve, reject) => {
+    if (!window.indexedDB) {
+      reject(new Error("IndexedDB n'est pas disponible dans ce navigateur."));
+      return;
+    }
+
+    const request = window.indexedDB.open(jsDosSaveDatabaseName, 1);
+
+    request.onerror = () => reject(request.error ?? new Error("Impossible d'ouvrir IndexedDB."));
+    request.onsuccess = () => resolve(request.result);
+    request.onupgradeneeded = () => {
+      const database = request.result;
+
+      if (!database.objectStoreNames.contains(jsDosSaveStoreName)) {
+        database.createObjectStore(jsDosSaveStoreName);
+      }
+    };
+  });
+
+const readJsDosSaveBundle = async (key: string) => {
+  const database = await openJsDosSaveDatabase();
+
+  try {
+    return await new Promise<Uint8Array>((resolve, reject) => {
+      const transaction = database.transaction(jsDosSaveStoreName, "readonly");
+      const request = transaction.objectStore(jsDosSaveStoreName).get(key);
+
+      transaction.onerror = () =>
+        reject(transaction.error ?? new Error("Impossible de lire la sauvegarde locale."));
+      request.onerror = () =>
+        reject(request.error ?? new Error("Impossible de lire la sauvegarde locale."));
+      request.onsuccess = () => {
+        if (request.result instanceof ArrayBuffer) {
+          resolve(new Uint8Array(request.result));
+          return;
+        }
+
+        if (request.result instanceof Uint8Array) {
+          resolve(request.result);
+          return;
+        }
+
+        reject(new Error("Sauvegarde locale js-dos introuvable."));
+      };
+    });
+  } finally {
+    database.close();
+  }
+};
+
+const writeJsDosSaveBundle = async (key: string, payload: ArrayBuffer) => {
+  const database = await openJsDosSaveDatabase();
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const transaction = database.transaction(jsDosSaveStoreName, "readwrite");
+
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () =>
+        reject(transaction.error ?? new Error("Impossible d'ecrire la sauvegarde locale."));
+      transaction.objectStore(jsDosSaveStoreName).put(payload, key);
+    });
+  } finally {
+    database.close();
+  }
+};
+
+const fetchAuthSession = async () => {
+  try {
+    const session = await $fetch<AuthSessionResponse>("/api/auth/session", {
+      credentials: "same-origin",
+    });
+
+    authUser.value = session.user;
+  } catch {
+    authUser.value = null;
+  }
+};
+
+const restoreVpsSave = async () => {
+  if (!authUser.value) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`/api/dos-user-saves/${props.gameSlug}`, {
+      credentials: "same-origin",
+    });
+
+    if (response.status === 404) {
+      return;
+    }
+
+    if (response.status === 401) {
+      authUser.value = null;
+      return;
+    }
+
+    if (!response.ok) {
+      throw new Error("Impossible de restaurer la sauvegarde VPS.");
+    }
+
+    const payload = await response.arrayBuffer();
+
+    if (payload.byteLength === 0) {
+      return;
+    }
+
+    await writeJsDosSaveBundle(props.bundleUrl, payload);
+    saveMessage.value = `Sauvegarde VPS restauree (${authUser.value.username})`;
+  } catch (error) {
+    saveError.value = getErrorMessage(error, "Impossible de restaurer la sauvegarde VPS.");
+  }
+};
+
 const startPlayer = async () => {
   if (!playerElement.value) {
     return;
@@ -101,6 +246,8 @@ const startPlayer = async () => {
   }
 
   try {
+    await fetchAuthSession();
+    await restoreVpsSave();
     await loadJsDosAssets();
 
     if (!window.Dos) {
@@ -131,6 +278,103 @@ const startPlayer = async () => {
   }
 };
 
+const triggerJsDosSave = async () => {
+  if (dosInstance?.layers?.save) {
+    await dosInstance.layers.save();
+    return;
+  }
+
+  const saved = await dosInstance?.save?.();
+
+  if (saved === false) {
+    throw new Error("js-dos n'a pas confirme la sauvegarde locale.");
+  }
+};
+
+const uploadVpsSave = async () => {
+  if (!dosInstance || !isReady.value) {
+    saveError.value = "Le lecteur DOS n'est pas encore pret.";
+    return;
+  }
+
+  saveError.value = "";
+  saveMessage.value = "";
+  isSavingToVps.value = true;
+
+  try {
+    await triggerJsDosSave();
+
+    const payload = await readJsDosSaveBundle(props.bundleUrl);
+
+    await $fetch(`/api/dos-user-saves/${props.gameSlug}`, {
+      body: new Blob([payload], { type: "application/octet-stream" }),
+      credentials: "same-origin",
+      headers: {
+        "content-type": "application/octet-stream",
+      },
+      method: "PUT",
+    });
+
+    saveMessage.value = `Sauvegarde VPS terminee (${authUser.value?.username ?? "compte"})`;
+  } catch (error) {
+    saveError.value = getErrorMessage(error, "Impossible de sauvegarder sur le VPS.");
+  } finally {
+    isSavingToVps.value = false;
+  }
+};
+
+const saveToVps = async () => {
+  await fetchAuthSession();
+
+  if (!authUser.value) {
+    shouldSaveAfterLogin.value = true;
+    isLoginDialogOpen.value = true;
+    return;
+  }
+
+  await uploadVpsSave();
+};
+
+const submitLogin = async () => {
+  loginError.value = "";
+  isLoggingIn.value = true;
+
+  try {
+    const session = await $fetch<AuthSessionResponse>("/api/auth/login", {
+      body: {
+        password: loginPassword.value,
+        username: loginUsername.value,
+      },
+      credentials: "same-origin",
+      method: "POST",
+    });
+
+    authUser.value = session.user;
+    loginPassword.value = "";
+    isLoginDialogOpen.value = false;
+
+    if (shouldSaveAfterLogin.value) {
+      shouldSaveAfterLogin.value = false;
+      await uploadVpsSave();
+    }
+  } catch (error) {
+    loginError.value = getErrorMessage(error, "Connexion impossible.");
+  } finally {
+    isLoggingIn.value = false;
+  }
+};
+
+const closeLoginDialog = () => {
+  shouldSaveAfterLogin.value = false;
+  isLoginDialogOpen.value = false;
+  loginError.value = "";
+  loginPassword.value = "";
+};
+
+defineExpose({
+  saveToVps,
+});
+
 onMounted(() => {
   void startPlayer();
 });
@@ -160,6 +404,64 @@ onBeforeUnmount(() => {
           Bundle attendu : {{ bundleUrl }}
         </p>
       </div>
+    </div>
+
+    <div
+      v-if="saveMessage || saveError || isSavingToVps"
+      class="pointer-events-none absolute bottom-4 left-4 z-10 max-w-sm border border-neon-cyan/40 bg-dark-card/95 px-4 py-3 shadow-lg shadow-neon-cyan/20">
+      <p class="font-pixel text-[9px] leading-5 text-neon-cyan">
+        {{ isSavingToVps ? "Sauvegarde VPS..." : saveError || saveMessage }}
+      </p>
+    </div>
+
+    <div
+      v-if="isLoginDialogOpen"
+      class="absolute inset-0 z-20 flex items-center justify-center bg-black/75 px-4">
+      <form
+        class="w-full max-w-sm border border-neon-cyan/60 bg-dark-card p-5 shadow-xl shadow-neon-cyan/20"
+        @submit.prevent="submitLogin">
+        <div class="mb-5 flex items-center justify-between gap-4">
+          <h2 class="font-pixel text-[10px] text-neon-cyan">Connexion</h2>
+          <button
+            type="button"
+            class="text-2xl leading-none text-gray-300 hover:text-white"
+            aria-label="Fermer"
+            @click="closeLoginDialog">
+            x
+          </button>
+        </div>
+
+        <label class="block text-sm text-gray-300" for="dos-save-login-username">Compte</label>
+        <select
+          id="dos-save-login-username"
+          v-model="loginUsername"
+          class="mt-2 w-full border border-neon-cyan/40 bg-black px-3 py-2 font-pixel text-[10px] text-neon-cyan outline-none focus:border-neon-cyan">
+          <option value="admin">admin</option>
+          <option value="guest">guest</option>
+        </select>
+
+        <label class="mt-4 block text-sm text-gray-300" for="dos-save-login-password">
+          Mot de passe
+        </label>
+        <input
+          id="dos-save-login-password"
+          v-model="loginPassword"
+          class="mt-2 w-full border border-neon-cyan/40 bg-black px-3 py-2 text-base text-white outline-none focus:border-neon-cyan"
+          required
+          autocomplete="current-password"
+          type="password" />
+
+        <p v-if="loginError" class="mt-4 text-sm leading-5 text-red-300">
+          {{ loginError }}
+        </p>
+
+        <div class="mt-5 flex justify-end gap-3">
+          <button type="button" class="btn-pixel text-xs" @click="closeLoginDialog">Annuler</button>
+          <button type="submit" class="btn-pixel text-xs" :disabled="isLoggingIn">
+            {{ isLoggingIn ? "Connexion..." : "Valider" }}
+          </button>
+        </div>
+      </form>
     </div>
 
     <span v-if="isReady" class="sr-only">Lecteur MS-DOS pret</span>

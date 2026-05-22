@@ -1,9 +1,9 @@
 import { createError, send, setHeader } from "h3";
-import { resolveBrowserDosSaveDescriptor } from "../../utils/dos-save-browser-session";
 import { getDosSaveMetadata, readDosSave } from "../../utils/dos-save-storage";
+import { resolveUserDosSaveDescriptor } from "../../utils/dos-user-save-requests";
 
 export default defineEventHandler(async (event) => {
-  const descriptor = resolveBrowserDosSaveDescriptor(event);
+  const descriptor = resolveUserDosSaveDescriptor(event);
   const metadata = await getDosSaveMetadata(event, descriptor);
   const payload = await readDosSave(event, descriptor);
 

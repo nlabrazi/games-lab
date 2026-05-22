@@ -1,14 +1,12 @@
 import { sendNoContent, setHeader } from "h3";
-import {
-  requireSameOriginDosSaveRequest,
-  resolveBrowserDosSaveDescriptor,
-} from "../../utils/dos-save-browser-session";
 import { deleteDosSave } from "../../utils/dos-save-storage";
+import { resolveUserDosSaveDescriptor } from "../../utils/dos-user-save-requests";
+import { requireSameOriginRequest } from "../../utils/request-origin";
 
 export default defineEventHandler(async (event) => {
-  requireSameOriginDosSaveRequest(event);
+  requireSameOriginRequest(event);
 
-  const descriptor = resolveBrowserDosSaveDescriptor(event);
+  const descriptor = resolveUserDosSaveDescriptor(event);
   await deleteDosSave(event, descriptor);
 
   setHeader(event, "cache-control", "no-store");

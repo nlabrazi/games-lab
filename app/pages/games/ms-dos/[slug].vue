@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import JsDosPlayer from "~/components/JsDosPlayer.vue";
+import { computed, ref } from "vue";
+import type JsDosPlayer from "~/components/JsDosPlayer.vue";
 import { findDosGame } from "~/data/dosGames";
 
 const route = useRoute();
 const config = useRuntimeConfig();
+const player = ref<InstanceType<typeof JsDosPlayer> | null>(null);
 
 const gameSlug = computed(() => {
   const routeSlug = route.params.slug;
@@ -32,6 +33,10 @@ const bundleUrl = computed(() =>
   joinUrl(String(config.public.dosGamesBaseUrl), game.value.bundleFile),
 );
 
+const saveToVps = () => {
+  void player.value?.saveToVps();
+};
+
 useHead(() => ({
   title: `${game.value.title} - MS-DOS`,
 }));
@@ -40,14 +45,21 @@ useHead(() => ({
 <template>
   <main class="min-h-screen bg-black">
     <div class="flex items-center justify-between gap-3 border-b border-neon-cyan/30 bg-dark-card px-4 py-3">
-      <NuxtLink to="/" class="btn-pixel shrink-0 text-xs">Accueil</NuxtLink>
+      <div class="flex shrink-0 items-center gap-3">
+        <NuxtLink to="/" class="btn-pixel text-xs">Accueil</NuxtLink>
+        <button type="button" class="btn-pixel text-xs" @click="saveToVps">Sauvegarder VPS</button>
+      </div>
       <h1 class="truncate text-right font-pixel text-[10px] text-neon-cyan sm:text-sm">
         MS-DOS / {{ game.title }}
       </h1>
     </div>
 
     <ClientOnly>
-      <JsDosPlayer :bundle-url="bundleUrl" :title="game.title" />
+      <JsDosPlayer
+        ref="player"
+        :bundle-url="bundleUrl"
+        :game-slug="game.slug"
+        :title="game.title" />
 
       <template #fallback>
         <section class="flex h-[calc(100vh-57px)] items-center justify-center bg-black px-4 text-center">
