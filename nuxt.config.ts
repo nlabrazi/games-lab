@@ -1,4 +1,5 @@
 const defaultDosGamesDir = import.meta.dev ? "local/dos-games" : "public/dos-games";
+const defaultDosSavesDir = import.meta.dev ? "local/dos-saves" : "data/dos-saves";
 
 /*
   Configuration Nuxt 4 : activation de Tailwind, import global des CSS,
@@ -10,6 +11,7 @@ export default defineNuxtConfig({
   modules: ["@nuxtjs/tailwindcss"],
   runtimeConfig: {
     dosGamesDir: defaultDosGamesDir,
+    dosSavesDir: defaultDosSavesDir,
     public: {
       dosGamesBaseUrl: "/api/dos-games",
       jsDosScriptUrl: "https://v8.js-dos.com/latest/js-dos.js",
