@@ -55,6 +55,7 @@ const loginUsername = ref<AuthUser["username"]>("admin");
 const loginPassword = ref("");
 const loginError = ref("");
 const isLoggingIn = ref(false);
+const isLoggingOut = ref(false);
 const isSavingToVps = ref(false);
 const saveMessage = ref("");
 const saveError = ref("");
@@ -364,6 +365,27 @@ const submitLogin = async () => {
   }
 };
 
+const logoutFromVps = async () => {
+  saveError.value = "";
+  saveMessage.value = "";
+  isLoggingOut.value = true;
+
+  try {
+    await $fetch<AuthSessionResponse>("/api/auth/logout", {
+      credentials: "same-origin",
+      method: "POST",
+    });
+
+    authUser.value = null;
+    closeLoginDialog();
+    saveMessage.value = "Session VPS fermee";
+  } catch (error) {
+    saveError.value = getErrorMessage(error, "Deconnexion impossible.");
+  } finally {
+    isLoggingOut.value = false;
+  }
+};
+
 const closeLoginDialog = () => {
   shouldSaveAfterLogin.value = false;
   isLoginDialogOpen.value = false;
@@ -412,6 +434,19 @@ onBeforeUnmount(() => {
       <p class="font-pixel text-[9px] leading-5 text-neon-cyan">
         {{ isSavingToVps ? "Sauvegarde VPS..." : saveError || saveMessage }}
       </p>
+    </div>
+
+    <div
+      v-if="authUser"
+      class="absolute right-4 top-4 z-10 flex items-center gap-2 border border-neon-cyan/40 bg-dark-card/90 px-3 py-2 shadow-lg shadow-neon-cyan/20">
+      <span class="font-pixel text-[9px] leading-5 text-neon-cyan">VPS {{ authUser.username }}</span>
+      <button
+        type="button"
+        class="text-xs leading-none text-gray-300 hover:text-white disabled:opacity-60"
+        :disabled="isLoggingOut"
+        @click="logoutFromVps">
+        {{ isLoggingOut ? "..." : "Deconnexion" }}
+      </button>
     </div>
 
     <div

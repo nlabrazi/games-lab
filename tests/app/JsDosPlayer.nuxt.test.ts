@@ -190,6 +190,15 @@ const mountPlayer = async ({
       };
     }
 
+    if (url === "/api/auth/logout") {
+      currentUser = null;
+
+      return {
+        authenticated: false,
+        user: null,
+      };
+    }
+
     if (url === `/api/dos-user-saves/${gameSlug}` && options?.method === "PUT") {
       return {
         saved: true,
@@ -253,6 +262,27 @@ describe("JsDosPlayer", () => {
 
     expect(fetchMock).toHaveBeenCalledWith(`/api/dos-user-saves/${gameSlug}`, {
       credentials: "same-origin",
+    });
+  });
+
+  it("shows the active VPS session and logs out", async () => {
+    const { $fetchMock, wrapper } = await mountPlayer({
+      sessionUser: {
+        username: "guest",
+      },
+    });
+
+    expect(wrapper.text()).toContain("VPS guest");
+
+    await wrapper.get("button").trigger("click");
+
+    await waitFor(() => {
+      expect($fetchMock).toHaveBeenCalledWith("/api/auth/logout", {
+        credentials: "same-origin",
+        method: "POST",
+      });
+      expect(wrapper.text()).not.toContain("VPS guest");
+      expect(wrapper.text()).toContain("Session VPS fermee");
     });
   });
 
