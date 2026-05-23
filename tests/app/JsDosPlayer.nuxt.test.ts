@@ -315,6 +315,37 @@ describe("JsDosPlayer", () => {
     expect(wrapper.find('input[type="password"]').exists()).toBe(true);
   });
 
+  it("focuses the login password field and stops keyboard events from reaching the game", async () => {
+    const { wrapper } = await mountPlayer({
+      sessionUser: null,
+    });
+    const focusSpy = vi.spyOn(HTMLInputElement.prototype, "focus");
+    const shellKeydown = vi.fn();
+
+    wrapper.get(".dos-player-shell").element.addEventListener("keydown", shellKeydown);
+
+    try {
+      await (wrapper.vm as unknown as { saveToVps: () => Promise<void> }).saveToVps();
+      await nextTick();
+
+      const passwordInput = wrapper.get('input[type="password"]').element;
+
+      expect(focusSpy).toHaveBeenCalled();
+
+      passwordInput.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          bubbles: true,
+          key: "a",
+        }),
+      );
+
+      expect(shellKeydown).not.toHaveBeenCalled();
+    } finally {
+      wrapper.get(".dos-player-shell").element.removeEventListener("keydown", shellKeydown);
+      focusSpy.mockRestore();
+    }
+  });
+
   it("logs in, triggers js-dos local save, reads IndexedDB, then uploads the save", async () => {
     const localPayload = new Uint8Array([5, 4, 3, 2, 1]);
     const { $fetchMock, layersSave, wrapper } = await mountPlayer({
