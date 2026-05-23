@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 
 interface DosOptions {
   url: string;
@@ -53,6 +53,7 @@ const authUser = ref<AuthUser | null>(null);
 const isLoginDialogOpen = ref(false);
 const loginUsername = ref<AuthUser["username"]>("admin");
 const loginPassword = ref("");
+const loginPasswordInput = ref<HTMLInputElement | null>(null);
 const loginError = ref("");
 const isLoggingIn = ref(false);
 const isLoggingOut = ref(false);
@@ -292,6 +293,25 @@ const triggerJsDosSave = async () => {
   }
 };
 
+const releaseJsDosKeyboardFocus = () => {
+  const activeElement = document.activeElement;
+
+  if (activeElement instanceof HTMLElement) {
+    activeElement.blur();
+  }
+};
+
+const stopLoginKeyboardEvent = (event: KeyboardEvent) => {
+  event.stopPropagation();
+};
+
+const openLoginDialog = async () => {
+  releaseJsDosKeyboardFocus();
+  isLoginDialogOpen.value = true;
+  await nextTick();
+  loginPasswordInput.value?.focus();
+};
+
 const uploadVpsSave = async () => {
   if (!dosInstance || !isReady.value) {
     saveError.value = "Le lecteur DOS n'est pas encore pret.";
@@ -329,7 +349,7 @@ const saveToVps = async () => {
 
   if (!authUser.value) {
     shouldSaveAfterLogin.value = true;
-    isLoginDialogOpen.value = true;
+    await openLoginDialog();
     return;
   }
 
@@ -451,7 +471,12 @@ onBeforeUnmount(() => {
 
     <div
       v-if="isLoginDialogOpen"
-      class="absolute inset-0 z-20 flex items-center justify-center bg-black/75 px-4">
+      class="absolute inset-0 z-20 flex items-center justify-center bg-black/75 px-4"
+      role="dialog"
+      aria-modal="true"
+      @keydown.capture="stopLoginKeyboardEvent"
+      @keyup.capture="stopLoginKeyboardEvent"
+      @keypress.capture="stopLoginKeyboardEvent">
       <form
         class="w-full max-w-sm border border-neon-cyan/60 bg-dark-card p-5 shadow-xl shadow-neon-cyan/20"
         @submit.prevent="submitLogin">
@@ -480,6 +505,7 @@ onBeforeUnmount(() => {
         </label>
         <input
           id="dos-save-login-password"
+          ref="loginPasswordInput"
           v-model="loginPassword"
           class="mt-2 w-full border border-neon-cyan/40 bg-black px-3 py-2 text-base text-white outline-none focus:border-neon-cyan"
           required
