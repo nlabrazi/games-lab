@@ -141,49 +141,112 @@ const openJsDosSaveDatabase = () =>
     };
   });
 
-const readJsDosSaveBundle = async (key: string) => {
+const getJsDosSaveKeyCandidates = (key: string) =>
+  Array.from(new Set([key, normalizeAssetUrl(key)]));
+
+const getUrlPathname = (url: string) => new URL(url, window.location.href).pathname;
+
+const getBundleFileName = (bundleUrl: string) => getUrlPathname(bundleUrl).split("/").pop() ?? "";
+
+const isMatchingJsDosSaveKey = (key: IDBValidKey, bundleUrl: string) => {
+  if (typeof key !== "string") {
+    return false;
+  }
+
+  const bundlePathname = getUrlPathname(bundleUrl);
+  const keyPathname = getUrlPathname(key);
+  const bundleFileName = getBundleFileName(bundleUrl);
+
+  return (
+    keyPathname === bundlePathname ||
+    key === bundleFileName ||
+    keyPathname.endsWith(`/${bundleFileName}`)
+  );
+};
+
+const getJsDosSavePayload = async (value: unknown) => {
+  if (value instanceof ArrayBuffer) {
+    return new Uint8Array(value);
+  }
+
+  if (value instanceof Uint8Array) {
+    return value;
+  }
+
+  if (value instanceof Blob) {
+    return new Uint8Array(await value.arrayBuffer());
+  }
+
+  return null;
+};
+
+const readJsDosStoreValue = (database: IDBDatabase, key: IDBValidKey) =>
+  new Promise<unknown>((resolve, reject) => {
+    const transaction = database.transaction(jsDosSaveStoreName, "readonly");
+    const request = transaction.objectStore(jsDosSaveStoreName).get(key);
+
+    transaction.onerror = () =>
+      reject(transaction.error ?? new Error("Impossible de lire la sauvegarde locale."));
+    request.onerror = () =>
+      reject(request.error ?? new Error("Impossible de lire la sauvegarde locale."));
+    request.onsuccess = () => resolve(request.result);
+  });
+
+const readJsDosStoreKeys = (database: IDBDatabase) =>
+  new Promise<IDBValidKey[]>((resolve, reject) => {
+    const transaction = database.transaction(jsDosSaveStoreName, "readonly");
+    const request = transaction.objectStore(jsDosSaveStoreName).getAllKeys();
+
+    transaction.onerror = () =>
+      reject(transaction.error ?? new Error("Impossible de lire la sauvegarde locale."));
+    request.onerror = () =>
+      reject(request.error ?? new Error("Impossible de lire la sauvegarde locale."));
+    request.onsuccess = () => resolve(request.result);
+  });
+
+const readJsDosSaveBundle = async (bundleUrl: string) => {
   const database = await openJsDosSaveDatabase();
 
   try {
-    return await new Promise<Uint8Array>((resolve, reject) => {
-      const transaction = database.transaction(jsDosSaveStoreName, "readonly");
-      const request = transaction.objectStore(jsDosSaveStoreName).get(key);
+    for (const key of getJsDosSaveKeyCandidates(bundleUrl)) {
+      const payload = await getJsDosSavePayload(await readJsDosStoreValue(database, key));
 
-      transaction.onerror = () =>
-        reject(transaction.error ?? new Error("Impossible de lire la sauvegarde locale."));
-      request.onerror = () =>
-        reject(request.error ?? new Error("Impossible de lire la sauvegarde locale."));
-      request.onsuccess = () => {
-        if (request.result instanceof ArrayBuffer) {
-          resolve(new Uint8Array(request.result));
-          return;
-        }
+      if (payload) {
+        return payload;
+      }
+    }
 
-        if (request.result instanceof Uint8Array) {
-          resolve(request.result);
-          return;
-        }
+    const storedKeys = await readJsDosStoreKeys(database);
+    const matchingKeys = storedKeys.filter((key) => isMatchingJsDosSaveKey(key, bundleUrl));
 
-        reject(new Error("Sauvegarde locale js-dos introuvable."));
-      };
-    });
+    for (const key of matchingKeys) {
+      const payload = await getJsDosSavePayload(await readJsDosStoreValue(database, key));
+
+      if (payload) {
+        return payload;
+      }
+    }
+
+    throw new Error("Sauvegarde locale js-dos introuvable.");
   } finally {
     database.close();
   }
 };
 
-const writeJsDosSaveBundle = async (key: string, payload: ArrayBuffer) => {
+const writeJsDosSaveBundle = async (bundleUrl: string, payload: ArrayBuffer) => {
   const database = await openJsDosSaveDatabase();
 
   try {
-    await new Promise<void>((resolve, reject) => {
-      const transaction = database.transaction(jsDosSaveStoreName, "readwrite");
+    for (const key of getJsDosSaveKeyCandidates(bundleUrl)) {
+      await new Promise<void>((resolve, reject) => {
+        const transaction = database.transaction(jsDosSaveStoreName, "readwrite");
 
-      transaction.oncomplete = () => resolve();
-      transaction.onerror = () =>
-        reject(transaction.error ?? new Error("Impossible d'ecrire la sauvegarde locale."));
-      transaction.objectStore(jsDosSaveStoreName).put(payload, key);
-    });
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () =>
+          reject(transaction.error ?? new Error("Impossible d'ecrire la sauvegarde locale."));
+        transaction.objectStore(jsDosSaveStoreName).put(payload, key);
+      });
+    }
   } finally {
     database.close();
   }
