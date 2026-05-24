@@ -6,7 +6,8 @@ import JsDosPlayer from "../../app/components/JsDosPlayer.vue";
 
 const bundleUrl = "/api/dos-games/lands-of-lore.jsdos";
 const gameSlug = "lands-of-lore";
-const jsDosSaveDatabaseName = "js-dos-cache (emulators-ui-saves)";
+const guestJsDosSaveDatabaseName = "js-dos-cache (guest)";
+const legacyJsDosSaveDatabaseName = "js-dos-cache (emulators-ui-saves)";
 const jsDosSaveStoreName = "files";
 const jsDosScriptUrl = "https://v8.js-dos.com/latest/js-dos.js";
 const jsDosStyleUrl = "https://v8.js-dos.com/latest/js-dos.css";
@@ -63,9 +64,9 @@ const uninstallIndexedDB = () => {
   });
 };
 
-const openTestSaveDatabase = () =>
+const openTestSaveDatabase = (databaseName = legacyJsDosSaveDatabaseName) =>
   new Promise<IDBDatabase>((resolve, reject) => {
-    const request = window.indexedDB.open(jsDosSaveDatabaseName, 1);
+    const request = window.indexedDB.open(databaseName, 1);
 
     request.onerror = () => reject(request.error ?? new Error("IndexedDB test open failed."));
     request.onsuccess = () => resolve(request.result);
@@ -78,8 +79,8 @@ const openTestSaveDatabase = () =>
     };
   });
 
-const readStoredBundle = async (key: string) => {
-  const database = await openTestSaveDatabase();
+const readStoredBundle = async (key: string, databaseName = legacyJsDosSaveDatabaseName) => {
+  const database = await openTestSaveDatabase(databaseName);
 
   try {
     return await new Promise<ArrayBuffer | Uint8Array | undefined>((resolve, reject) => {
@@ -94,8 +95,12 @@ const readStoredBundle = async (key: string) => {
   }
 };
 
-const writeStoredBundle = async (key: string, payload: Uint8Array) => {
-  const database = await openTestSaveDatabase();
+const writeStoredBundle = async (
+  key: string,
+  payload: Uint8Array,
+  databaseName = legacyJsDosSaveDatabaseName,
+) => {
+  const database = await openTestSaveDatabase(databaseName);
 
   try {
     await new Promise<void>((resolve, reject) => {
@@ -297,7 +302,9 @@ describe("JsDosPlayer", () => {
     });
 
     await waitFor(async () => {
-      const storedPayload = toUint8Array(await readStoredBundle(bundleUrl));
+      const storedPayload = toUint8Array(
+        await readStoredBundle(bundleUrl, guestJsDosSaveDatabaseName),
+      );
 
       expect(storedPayload).toEqual(vpsPayload);
     });
@@ -384,11 +391,10 @@ describe("JsDosPlayer", () => {
     expect(wrapper.text()).toContain("Sauvegarde VPS terminee (admin)");
   });
 
-  it("uploads the local js-dos save when it is stored with an absolute bundle URL key", async () => {
+  it("uploads the local js-dos save from the guest cache database used by js-dos", async () => {
     const localPayload = new Uint8Array([6, 7, 8, 9]);
-    const absoluteBundleUrl = new URL(bundleUrl, window.location.href).href;
-    const { $fetchMock, wrapper } = await mountPlayer({
-      onLocalSave: () => writeStoredBundle(absoluteBundleUrl, localPayload),
+    const { $fetchMock, layersSave, wrapper } = await mountPlayer({
+      onLocalSave: () => writeStoredBundle(bundleUrl, localPayload, guestJsDosSaveDatabaseName),
       sessionUser: {
         username: "admin",
       },
@@ -396,33 +402,7 @@ describe("JsDosPlayer", () => {
 
     await (wrapper.vm as unknown as { saveToVps: () => Promise<void> }).saveToVps();
 
-    let putCall: [string, { body: Blob; credentials: string; headers: object; method: string }];
-
-    await waitFor(() => {
-      const matchingCall = $fetchMock.mock.calls.find(
-        ([url, options]) => url === `/api/dos-user-saves/${gameSlug}` && options?.method === "PUT",
-      );
-
-      expect(matchingCall).toBeTruthy();
-      putCall = matchingCall as typeof putCall;
-    });
-
-    const uploadedPayload = new Uint8Array(await putCall[1].body.arrayBuffer());
-
-    expect(uploadedPayload).toEqual(localPayload);
-    expect(wrapper.text()).toContain("Sauvegarde VPS terminee (admin)");
-  });
-
-  it("uploads the local js-dos save when it is stored with a matching bundle filename key", async () => {
-    const localPayload = new Uint8Array([1, 3, 5, 7]);
-    const { $fetchMock, wrapper } = await mountPlayer({
-      onLocalSave: () => writeStoredBundle("lands-of-lore.jsdos", localPayload),
-      sessionUser: {
-        username: "admin",
-      },
-    });
-
-    await (wrapper.vm as unknown as { saveToVps: () => Promise<void> }).saveToVps();
+    await waitFor(() => expect(layersSave).toHaveBeenCalledTimes(1));
 
     let putCall: [string, { body: Blob; credentials: string; headers: object; method: string }];
 

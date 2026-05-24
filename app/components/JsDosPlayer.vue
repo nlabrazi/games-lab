@@ -65,7 +65,10 @@ const shouldSaveAfterLogin = ref(false);
 let dosInstance: DosInstance | null = null;
 let jsDosAssetsPromise: Promise<void> | null = null;
 
-const jsDosSaveDatabaseName = "js-dos-cache (emulators-ui-saves)";
+const jsDosSaveDatabaseNames = [
+  "js-dos-cache (guest)",
+  "js-dos-cache (emulators-ui-saves)",
+] as const;
 const jsDosSaveStoreName = "files";
 
 const scriptUrl = computed(() => String(config.public.jsDosScriptUrl));
@@ -121,14 +124,14 @@ const loadJsDosAssets = () => {
 const getErrorMessage = (error: unknown, fallbackMessage: string) =>
   error instanceof Error ? error.message : fallbackMessage;
 
-const openJsDosSaveDatabase = () =>
+const openJsDosSaveDatabase = (databaseName: string) =>
   new Promise<IDBDatabase>((resolve, reject) => {
     if (!window.indexedDB) {
       reject(new Error("IndexedDB n'est pas disponible dans ce navigateur."));
       return;
     }
 
-    const request = window.indexedDB.open(jsDosSaveDatabaseName, 1);
+    const request = window.indexedDB.open(databaseName, 1);
 
     request.onerror = () => reject(request.error ?? new Error("Impossible d'ouvrir IndexedDB."));
     request.onsuccess = () => resolve(request.result);
@@ -144,27 +147,7 @@ const openJsDosSaveDatabase = () =>
 const getJsDosSaveKeyCandidates = (key: string) =>
   Array.from(new Set([key, normalizeAssetUrl(key)]));
 
-const getUrlPathname = (url: string) => new URL(url, window.location.href).pathname;
-
-const getBundleFileName = (bundleUrl: string) => getUrlPathname(bundleUrl).split("/").pop() ?? "";
-
-const isMatchingJsDosSaveKey = (key: IDBValidKey, bundleUrl: string) => {
-  if (typeof key !== "string") {
-    return false;
-  }
-
-  const bundlePathname = getUrlPathname(bundleUrl);
-  const keyPathname = getUrlPathname(key);
-  const bundleFileName = getBundleFileName(bundleUrl);
-
-  return (
-    keyPathname === bundlePathname ||
-    key === bundleFileName ||
-    keyPathname.endsWith(`/${bundleFileName}`)
-  );
-};
-
-const getJsDosSavePayload = async (value: unknown) => {
+const getJsDosSavePayload = (value: unknown) => {
   if (value instanceof ArrayBuffer) {
     return new Uint8Array(value);
   }
@@ -173,14 +156,10 @@ const getJsDosSavePayload = async (value: unknown) => {
     return value;
   }
 
-  if (value instanceof Blob) {
-    return new Uint8Array(await value.arrayBuffer());
-  }
-
   return null;
 };
 
-const readJsDosStoreValue = (database: IDBDatabase, key: IDBValidKey) =>
+const readJsDosStoreValue = (database: IDBDatabase, key: string) =>
   new Promise<unknown>((resolve, reject) => {
     const transaction = database.transaction(jsDosSaveStoreName, "readonly");
     const request = transaction.objectStore(jsDosSaveStoreName).get(key);
@@ -192,63 +171,51 @@ const readJsDosStoreValue = (database: IDBDatabase, key: IDBValidKey) =>
     request.onsuccess = () => resolve(request.result);
   });
 
-const readJsDosStoreKeys = (database: IDBDatabase) =>
-  new Promise<IDBValidKey[]>((resolve, reject) => {
-    const transaction = database.transaction(jsDosSaveStoreName, "readonly");
-    const request = transaction.objectStore(jsDosSaveStoreName).getAllKeys();
+const readJsDosSaveBundle = async (key: string) => {
+  for (const databaseName of jsDosSaveDatabaseNames) {
+    const database = await openJsDosSaveDatabase(databaseName);
 
-    transaction.onerror = () =>
-      reject(transaction.error ?? new Error("Impossible de lire la sauvegarde locale."));
-    request.onerror = () =>
-      reject(request.error ?? new Error("Impossible de lire la sauvegarde locale."));
-    request.onsuccess = () => resolve(request.result);
-  });
+    try {
+      for (const keyCandidate of getJsDosSaveKeyCandidates(key)) {
+        const payload = getJsDosSavePayload(await readJsDosStoreValue(database, keyCandidate));
 
-const readJsDosSaveBundle = async (bundleUrl: string) => {
-  const database = await openJsDosSaveDatabase();
-
-  try {
-    for (const key of getJsDosSaveKeyCandidates(bundleUrl)) {
-      const payload = await getJsDosSavePayload(await readJsDosStoreValue(database, key));
-
-      if (payload) {
-        return payload;
+        if (payload) {
+          return payload;
+        }
       }
+    } finally {
+      database.close();
     }
-
-    const storedKeys = await readJsDosStoreKeys(database);
-    const matchingKeys = storedKeys.filter((key) => isMatchingJsDosSaveKey(key, bundleUrl));
-
-    for (const key of matchingKeys) {
-      const payload = await getJsDosSavePayload(await readJsDosStoreValue(database, key));
-
-      if (payload) {
-        return payload;
-      }
-    }
-
-    throw new Error("Sauvegarde locale js-dos introuvable.");
-  } finally {
-    database.close();
   }
+
+  throw new Error("Sauvegarde locale js-dos introuvable.");
 };
 
-const writeJsDosSaveBundle = async (bundleUrl: string, payload: ArrayBuffer) => {
-  const database = await openJsDosSaveDatabase();
+const writeJsDosSaveBundleToDatabase = async (
+  database: IDBDatabase,
+  key: string,
+  payload: ArrayBuffer,
+) =>
+  new Promise<void>((resolve, reject) => {
+    const transaction = database.transaction(jsDosSaveStoreName, "readwrite");
 
-  try {
-    for (const key of getJsDosSaveKeyCandidates(bundleUrl)) {
-      await new Promise<void>((resolve, reject) => {
-        const transaction = database.transaction(jsDosSaveStoreName, "readwrite");
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () =>
+      reject(transaction.error ?? new Error("Impossible d'ecrire la sauvegarde locale."));
+    transaction.objectStore(jsDosSaveStoreName).put(payload, key);
+  });
 
-        transaction.oncomplete = () => resolve();
-        transaction.onerror = () =>
-          reject(transaction.error ?? new Error("Impossible d'ecrire la sauvegarde locale."));
-        transaction.objectStore(jsDosSaveStoreName).put(payload, key);
-      });
+const writeJsDosSaveBundle = async (key: string, payload: ArrayBuffer) => {
+  for (const databaseName of jsDosSaveDatabaseNames) {
+    const database = await openJsDosSaveDatabase(databaseName);
+
+    try {
+      for (const keyCandidate of getJsDosSaveKeyCandidates(key)) {
+        await writeJsDosSaveBundleToDatabase(database, keyCandidate, payload);
+      }
+    } finally {
+      database.close();
     }
-  } finally {
-    database.close();
   }
 };
 
