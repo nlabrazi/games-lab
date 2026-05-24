@@ -1,3 +1,4 @@
+import { Blob as NodeBlob } from "node:buffer";
 import { mountSuspended } from "@nuxt/test-utils/runtime";
 import { IDBFactory } from "fake-indexeddb";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -83,7 +84,7 @@ const readStoredBundle = async (key: string, databaseName = legacyJsDosSaveDatab
   const database = await openTestSaveDatabase(databaseName);
 
   try {
-    return await new Promise<ArrayBuffer | Uint8Array | undefined>((resolve, reject) => {
+    return await new Promise<ArrayBuffer | Blob | Uint8Array | undefined>((resolve, reject) => {
       const transaction = database.transaction(jsDosSaveStoreName, "readonly");
       const request = transaction.objectStore(jsDosSaveStoreName).get(key);
 
@@ -97,7 +98,7 @@ const readStoredBundle = async (key: string, databaseName = legacyJsDosSaveDatab
 
 const writeStoredBundle = async (
   key: string,
-  payload: Uint8Array,
+  payload: Blob | Uint8Array,
   databaseName = legacyJsDosSaveDatabaseName,
 ) => {
   const database = await openTestSaveDatabase(databaseName);
@@ -116,7 +117,7 @@ const writeStoredBundle = async (
   }
 };
 
-const toUint8Array = (payload: ArrayBuffer | Uint8Array | undefined) => {
+const toUint8Array = (payload: ArrayBuffer | Blob | Uint8Array | undefined) => {
   if (payload instanceof Uint8Array) {
     return payload;
   }
@@ -416,6 +417,44 @@ describe("JsDosPlayer", () => {
     });
 
     const uploadedPayload = new Uint8Array(await putCall[1].body.arrayBuffer());
+
+    expect(uploadedPayload).toEqual(localPayload);
+    expect(wrapper.text()).toContain("Sauvegarde VPS terminee (admin)");
+  });
+
+  it("uploads a Blob local save from the js-dos cache database", async () => {
+    const localPayload = new Uint8Array([10, 11, 12, 13]);
+    const { $fetchMock, layersSave, wrapper } = await mountPlayer({
+      onLocalSave: () =>
+        writeStoredBundle(
+          bundleUrl,
+          new NodeBlob([localPayload]) as Blob,
+          guestJsDosSaveDatabaseName,
+        ),
+      sessionUser: {
+        username: "admin",
+      },
+    });
+
+    await (wrapper.vm as unknown as { saveToVps: () => Promise<void> }).saveToVps();
+
+    await waitFor(() => expect(layersSave).toHaveBeenCalledTimes(1));
+
+    let matchingCall: [string, { body: Blob }] | undefined;
+
+    await waitFor(() => {
+      matchingCall = $fetchMock.mock.calls.find(
+        ([url, options]) => url === `/api/dos-user-saves/${gameSlug}` && options?.method === "PUT",
+      ) as [string, { body: Blob }] | undefined;
+
+      expect(matchingCall).toBeTruthy();
+    });
+
+    if (!matchingCall) {
+      throw new Error("PUT save call not found.");
+    }
+
+    const uploadedPayload = new Uint8Array(await matchingCall[1].body.arrayBuffer());
 
     expect(uploadedPayload).toEqual(localPayload);
     expect(wrapper.text()).toContain("Sauvegarde VPS terminee (admin)");

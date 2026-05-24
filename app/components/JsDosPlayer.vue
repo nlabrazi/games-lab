@@ -65,6 +65,8 @@ const shouldSaveAfterLogin = ref(false);
 let dosInstance: DosInstance | null = null;
 let jsDosAssetsPromise: Promise<void> | null = null;
 
+// js-dos stores anonymous browser-local saves under its own "guest" cache profile.
+// This is unrelated to the app-level admin/guest VPS accounts.
 const jsDosSaveDatabaseNames = [
   "js-dos-cache (guest)",
   "js-dos-cache (emulators-ui-saves)",
@@ -147,13 +149,29 @@ const openJsDosSaveDatabase = (databaseName: string) =>
 const getJsDosSaveKeyCandidates = (key: string) =>
   Array.from(new Set([key, normalizeAssetUrl(key)]));
 
-const getJsDosSavePayload = (value: unknown) => {
+interface BlobLike {
+  arrayBuffer: () => Promise<ArrayBuffer>;
+}
+
+const isBlobLike = (value: unknown): value is BlobLike =>
+  typeof value === "object" &&
+  value !== null &&
+  "arrayBuffer" in value &&
+  typeof value.arrayBuffer === "function";
+
+const getJsDosSavePayload = async (value: unknown) => {
   if (value instanceof ArrayBuffer) {
     return new Uint8Array(value);
   }
 
-  if (value instanceof Uint8Array) {
-    return value;
+  if (ArrayBuffer.isView(value) && value.buffer instanceof ArrayBuffer) {
+    return new Uint8Array(
+      value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength),
+    );
+  }
+
+  if (isBlobLike(value)) {
+    return new Uint8Array(await value.arrayBuffer());
   }
 
   return null;
@@ -177,7 +195,9 @@ const readJsDosSaveBundle = async (key: string) => {
 
     try {
       for (const keyCandidate of getJsDosSaveKeyCandidates(key)) {
-        const payload = getJsDosSavePayload(await readJsDosStoreValue(database, keyCandidate));
+        const payload = await getJsDosSavePayload(
+          await readJsDosStoreValue(database, keyCandidate),
+        );
 
         if (payload) {
           return payload;
