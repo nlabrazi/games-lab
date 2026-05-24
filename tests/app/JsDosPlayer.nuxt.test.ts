@@ -384,6 +384,63 @@ describe("JsDosPlayer", () => {
     expect(wrapper.text()).toContain("Sauvegarde VPS terminee (admin)");
   });
 
+  it("uploads the local js-dos save when it is stored with an absolute bundle URL key", async () => {
+    const localPayload = new Uint8Array([6, 7, 8, 9]);
+    const absoluteBundleUrl = new URL(bundleUrl, window.location.href).href;
+    const { $fetchMock, wrapper } = await mountPlayer({
+      onLocalSave: () => writeStoredBundle(absoluteBundleUrl, localPayload),
+      sessionUser: {
+        username: "admin",
+      },
+    });
+
+    await (wrapper.vm as unknown as { saveToVps: () => Promise<void> }).saveToVps();
+
+    let putCall: [string, { body: Blob; credentials: string; headers: object; method: string }];
+
+    await waitFor(() => {
+      const matchingCall = $fetchMock.mock.calls.find(
+        ([url, options]) => url === `/api/dos-user-saves/${gameSlug}` && options?.method === "PUT",
+      );
+
+      expect(matchingCall).toBeTruthy();
+      putCall = matchingCall as typeof putCall;
+    });
+
+    const uploadedPayload = new Uint8Array(await putCall[1].body.arrayBuffer());
+
+    expect(uploadedPayload).toEqual(localPayload);
+    expect(wrapper.text()).toContain("Sauvegarde VPS terminee (admin)");
+  });
+
+  it("uploads the local js-dos save when it is stored with a matching bundle filename key", async () => {
+    const localPayload = new Uint8Array([1, 3, 5, 7]);
+    const { $fetchMock, wrapper } = await mountPlayer({
+      onLocalSave: () => writeStoredBundle("lands-of-lore.jsdos", localPayload),
+      sessionUser: {
+        username: "admin",
+      },
+    });
+
+    await (wrapper.vm as unknown as { saveToVps: () => Promise<void> }).saveToVps();
+
+    let putCall: [string, { body: Blob; credentials: string; headers: object; method: string }];
+
+    await waitFor(() => {
+      const matchingCall = $fetchMock.mock.calls.find(
+        ([url, options]) => url === `/api/dos-user-saves/${gameSlug}` && options?.method === "PUT",
+      );
+
+      expect(matchingCall).toBeTruthy();
+      putCall = matchingCall as typeof putCall;
+    });
+
+    const uploadedPayload = new Uint8Array(await putCall[1].body.arrayBuffer());
+
+    expect(uploadedPayload).toEqual(localPayload);
+    expect(wrapper.text()).toContain("Sauvegarde VPS terminee (admin)");
+  });
+
   it("shows a user-facing error when IndexedDB cannot be read", async () => {
     const { wrapper } = await mountPlayer({
       indexedDBAvailable: false,
