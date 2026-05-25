@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import type { DosAuthUsername } from "~/composables/useDosAuth";
 
 interface DosOptions {
@@ -44,7 +44,6 @@ const isReady = ref(false);
 const isLoginDialogOpen = ref(false);
 const loginUsername = ref<DosAuthUsername>("admin");
 const loginPassword = ref("");
-const loginPasswordInput = ref<HTMLInputElement | null>(null);
 const isSavingToVps = ref(false);
 const saveMessage = ref("");
 const saveError = ref("");
@@ -338,15 +337,9 @@ const releaseJsDosKeyboardFocus = () => {
   }
 };
 
-const stopLoginKeyboardEvent = (event: KeyboardEvent) => {
-  event.stopPropagation();
-};
-
-const openLoginDialog = async () => {
+const openLoginDialog = () => {
   releaseJsDosKeyboardFocus();
   isLoginDialogOpen.value = true;
-  await nextTick();
-  loginPasswordInput.value?.focus();
 };
 
 const uploadVpsSave = async () => {
@@ -386,7 +379,7 @@ const saveToVps = async () => {
 
   if (!authUser.value) {
     shouldSaveAfterLogin.value = true;
-    await openLoginDialog();
+    openLoginDialog();
     return;
   }
 
@@ -485,61 +478,14 @@ onBeforeUnmount(() => {
       </button>
     </div>
 
-    <div
-      v-if="isLoginDialogOpen"
-      class="absolute inset-0 z-20 flex items-center justify-center bg-black/75 px-4"
-      role="dialog"
-      aria-modal="true"
-      @keydown.capture="stopLoginKeyboardEvent"
-      @keyup.capture="stopLoginKeyboardEvent"
-      @keypress.capture="stopLoginKeyboardEvent">
-      <form
-        class="w-full max-w-sm border border-neon-cyan/60 bg-dark-card p-5 shadow-xl shadow-neon-cyan/20"
-        @submit.prevent="submitLogin">
-        <div class="mb-5 flex items-center justify-between gap-4">
-          <h2 class="font-pixel text-[10px] text-neon-cyan">Connexion</h2>
-          <button
-            type="button"
-            class="text-2xl leading-none text-gray-300 hover:text-white"
-            aria-label="Fermer"
-            @click="closeLoginDialog">
-            x
-          </button>
-        </div>
-
-        <label class="block text-sm text-gray-300" for="dos-save-login-username">Compte</label>
-        <select
-          id="dos-save-login-username"
-          v-model="loginUsername"
-          class="mt-2 w-full border border-neon-cyan/40 bg-black px-3 py-2 font-pixel text-[10px] text-neon-cyan outline-none focus:border-neon-cyan">
-          <option value="admin">admin</option>
-          <option value="guest">guest</option>
-        </select>
-
-        <label class="mt-4 block text-sm text-gray-300" for="dos-save-login-password">
-          Mot de passe
-        </label>
-        <input
-          id="dos-save-login-password"
-          ref="loginPasswordInput"
-          v-model="loginPassword"
-          class="mt-2 w-full border border-neon-cyan/40 bg-black px-3 py-2 text-base text-white outline-none focus:border-neon-cyan"
-          required
-          autocomplete="current-password"
-          type="password" />
-
-        <p v-if="loginError" class="mt-4 text-sm leading-5 text-red-300">
-          {{ loginError }}
-        </p>
-
-        <div class="mt-5 flex justify-end gap-3">
-          <button type="button" class="btn-pixel text-xs" @click="closeLoginDialog">Annuler</button>
-          <button type="submit" class="btn-pixel text-xs" :disabled="isLoggingIn">
-            {{ isLoggingIn ? "Connexion..." : "Valider" }}
-          </button>
-        </div>
-      </form>
-    </div>
+    <DosAuthModal
+      v-model:password="loginPassword"
+      v-model:username="loginUsername"
+      :error="loginError"
+      :loading="isLoggingIn"
+      :open="isLoginDialogOpen"
+      @close="closeLoginDialog"
+      @submit="submitLogin" />
 
     <span v-if="isReady" class="sr-only">Lecteur MS-DOS pret</span>
   </section>
