@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import type { DosAuthUsername } from "~/composables/useDosAuth";
+import { readJsDosLocalSaveBundle, writeJsDosLocalSaveBundle } from "~/utils/jsDosLocalPersistence";
 
 interface DosOptions {
   url: string;
@@ -63,14 +64,6 @@ const {
 let dosInstance: DosInstance | null = null;
 let jsDosAssetsPromise: Promise<void> | null = null;
 
-// js-dos stores anonymous browser-local saves under its own "guest" cache profile.
-// This is unrelated to the app-level admin/guest VPS accounts.
-const jsDosSaveDatabaseNames = [
-  "js-dos-cache (guest)",
-  "js-dos-cache (emulators-ui-saves)",
-] as const;
-const jsDosSaveStoreName = "files";
-
 const scriptUrl = computed(() => String(config.public.jsDosScriptUrl));
 const styleUrl = computed(() => String(config.public.jsDosStyleUrl));
 const pathPrefix = computed(() => String(config.public.jsDosPathPrefix || ""));
@@ -124,119 +117,6 @@ const loadJsDosAssets = () => {
 const getErrorMessage = (error: unknown, fallbackMessage: string) =>
   error instanceof Error ? error.message : fallbackMessage;
 
-const openJsDosSaveDatabase = (databaseName: string) =>
-  new Promise<IDBDatabase>((resolve, reject) => {
-    if (!window.indexedDB) {
-      reject(new Error("IndexedDB n'est pas disponible dans ce navigateur."));
-      return;
-    }
-
-    const request = window.indexedDB.open(databaseName, 1);
-
-    request.onerror = () => reject(request.error ?? new Error("Impossible d'ouvrir IndexedDB."));
-    request.onsuccess = () => resolve(request.result);
-    request.onupgradeneeded = () => {
-      const database = request.result;
-
-      if (!database.objectStoreNames.contains(jsDosSaveStoreName)) {
-        database.createObjectStore(jsDosSaveStoreName);
-      }
-    };
-  });
-
-const getJsDosSaveKeyCandidates = (key: string) =>
-  Array.from(new Set([key, normalizeAssetUrl(key)]));
-
-interface BlobLike {
-  arrayBuffer: () => Promise<ArrayBuffer>;
-}
-
-const isBlobLike = (value: unknown): value is BlobLike =>
-  typeof value === "object" &&
-  value !== null &&
-  "arrayBuffer" in value &&
-  typeof value.arrayBuffer === "function";
-
-const getJsDosSavePayload = async (value: unknown) => {
-  if (value instanceof ArrayBuffer) {
-    return new Uint8Array(value);
-  }
-
-  if (ArrayBuffer.isView(value) && value.buffer instanceof ArrayBuffer) {
-    return new Uint8Array(
-      value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength),
-    );
-  }
-
-  if (isBlobLike(value)) {
-    return new Uint8Array(await value.arrayBuffer());
-  }
-
-  return null;
-};
-
-const readJsDosStoreValue = (database: IDBDatabase, key: string) =>
-  new Promise<unknown>((resolve, reject) => {
-    const transaction = database.transaction(jsDosSaveStoreName, "readonly");
-    const request = transaction.objectStore(jsDosSaveStoreName).get(key);
-
-    transaction.onerror = () =>
-      reject(transaction.error ?? new Error("Impossible de lire la sauvegarde locale."));
-    request.onerror = () =>
-      reject(request.error ?? new Error("Impossible de lire la sauvegarde locale."));
-    request.onsuccess = () => resolve(request.result);
-  });
-
-const readJsDosSaveBundle = async (key: string) => {
-  for (const databaseName of jsDosSaveDatabaseNames) {
-    const database = await openJsDosSaveDatabase(databaseName);
-
-    try {
-      for (const keyCandidate of getJsDosSaveKeyCandidates(key)) {
-        const payload = await getJsDosSavePayload(
-          await readJsDosStoreValue(database, keyCandidate),
-        );
-
-        if (payload) {
-          return payload;
-        }
-      }
-    } finally {
-      database.close();
-    }
-  }
-
-  throw new Error("Sauvegarde locale js-dos introuvable.");
-};
-
-const writeJsDosSaveBundleToDatabase = async (
-  database: IDBDatabase,
-  key: string,
-  payload: ArrayBuffer,
-) =>
-  new Promise<void>((resolve, reject) => {
-    const transaction = database.transaction(jsDosSaveStoreName, "readwrite");
-
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () =>
-      reject(transaction.error ?? new Error("Impossible d'ecrire la sauvegarde locale."));
-    transaction.objectStore(jsDosSaveStoreName).put(payload, key);
-  });
-
-const writeJsDosSaveBundle = async (key: string, payload: ArrayBuffer) => {
-  for (const databaseName of jsDosSaveDatabaseNames) {
-    const database = await openJsDosSaveDatabase(databaseName);
-
-    try {
-      for (const keyCandidate of getJsDosSaveKeyCandidates(key)) {
-        await writeJsDosSaveBundleToDatabase(database, keyCandidate, payload);
-      }
-    } finally {
-      database.close();
-    }
-  }
-};
-
 const restoreVpsSave = async () => {
   if (!authUser.value) {
     return;
@@ -266,7 +146,7 @@ const restoreVpsSave = async () => {
       return;
     }
 
-    await writeJsDosSaveBundle(props.bundleUrl, payload);
+    await writeJsDosLocalSaveBundle(props.bundleUrl, payload);
     saveMessage.value = `Sauvegarde VPS restauree (${authUser.value.username})`;
   } catch (error) {
     saveError.value = getErrorMessage(error, "Impossible de restaurer la sauvegarde VPS.");
@@ -355,7 +235,7 @@ const uploadVpsSave = async () => {
   try {
     await triggerJsDosSave();
 
-    const payload = await readJsDosSaveBundle(props.bundleUrl);
+    const payload = await readJsDosLocalSaveBundle(props.bundleUrl);
 
     await $fetch(`/api/dos-user-saves/${props.gameSlug}`, {
       body: new Blob([payload], { type: "application/octet-stream" }),
