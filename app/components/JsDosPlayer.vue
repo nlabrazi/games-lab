@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import type { DosAuthUsername } from "~/composables/useDosAuth";
-import { readJsDosLocalSaveBundle, writeJsDosLocalSaveBundle } from "~/utils/jsDosLocalPersistence";
 
 interface DosOptions {
   url: string;
@@ -45,9 +44,6 @@ const isReady = ref(false);
 const isLoginDialogOpen = ref(false);
 const loginUsername = ref<DosAuthUsername>("admin");
 const loginPassword = ref("");
-const isSavingToVps = ref(false);
-const saveMessage = ref("");
-const saveError = ref("");
 const shouldSaveAfterLogin = ref(false);
 const {
   clearLoginError,
@@ -63,6 +59,35 @@ const {
 
 let dosInstance: DosInstance | null = null;
 let jsDosAssetsPromise: Promise<void> | null = null;
+
+const triggerJsDosSave = async () => {
+  if (dosInstance?.layers?.save) {
+    await dosInstance.layers.save();
+    return;
+  }
+
+  const saved = await dosInstance?.save?.();
+
+  if (saved === false) {
+    throw new Error("js-dos n'a pas confirme la sauvegarde locale.");
+  }
+};
+
+const {
+  clearFeedback: clearVpsSyncFeedback,
+  error: saveError,
+  isSaving: isSavingToVps,
+  loadVpsSave,
+  message: saveMessage,
+  saveVpsSave,
+} = useVpsSync({
+  clearSession,
+  getBundleUrl: () => props.bundleUrl,
+  getGameSlug: () => props.gameSlug,
+  isPlayerReady: () => Boolean(dosInstance && isReady.value),
+  triggerJsDosSave,
+  user: authUser,
+});
 
 const scriptUrl = computed(() => String(config.public.jsDosScriptUrl));
 const styleUrl = computed(() => String(config.public.jsDosStyleUrl));
@@ -117,42 +142,6 @@ const loadJsDosAssets = () => {
 const getErrorMessage = (error: unknown, fallbackMessage: string) =>
   error instanceof Error ? error.message : fallbackMessage;
 
-const restoreVpsSave = async () => {
-  if (!authUser.value) {
-    return;
-  }
-
-  try {
-    const response = await fetch(`/api/dos-user-saves/${props.gameSlug}`, {
-      credentials: "same-origin",
-    });
-
-    if (response.status === 404) {
-      return;
-    }
-
-    if (response.status === 401) {
-      clearSession();
-      return;
-    }
-
-    if (!response.ok) {
-      throw new Error("Impossible de restaurer la sauvegarde VPS.");
-    }
-
-    const payload = await response.arrayBuffer();
-
-    if (payload.byteLength === 0) {
-      return;
-    }
-
-    await writeJsDosLocalSaveBundle(props.bundleUrl, payload);
-    saveMessage.value = `Sauvegarde VPS restauree (${authUser.value.username})`;
-  } catch (error) {
-    saveError.value = getErrorMessage(error, "Impossible de restaurer la sauvegarde VPS.");
-  }
-};
-
 const startPlayer = async () => {
   if (!playerElement.value) {
     return;
@@ -165,7 +154,7 @@ const startPlayer = async () => {
 
   try {
     await refreshSession();
-    await restoreVpsSave();
+    await loadVpsSave();
     await loadJsDosAssets();
 
     if (!window.Dos) {
@@ -196,19 +185,6 @@ const startPlayer = async () => {
   }
 };
 
-const triggerJsDosSave = async () => {
-  if (dosInstance?.layers?.save) {
-    await dosInstance.layers.save();
-    return;
-  }
-
-  const saved = await dosInstance?.save?.();
-
-  if (saved === false) {
-    throw new Error("js-dos n'a pas confirme la sauvegarde locale.");
-  }
-};
-
 const releaseJsDosKeyboardFocus = () => {
   const activeElement = document.activeElement;
 
@@ -222,38 +198,6 @@ const openLoginDialog = () => {
   isLoginDialogOpen.value = true;
 };
 
-const uploadVpsSave = async () => {
-  if (!dosInstance || !isReady.value) {
-    saveError.value = "Le lecteur DOS n'est pas encore pret.";
-    return;
-  }
-
-  saveError.value = "";
-  saveMessage.value = "";
-  isSavingToVps.value = true;
-
-  try {
-    await triggerJsDosSave();
-
-    const payload = await readJsDosLocalSaveBundle(props.bundleUrl);
-
-    await $fetch(`/api/dos-user-saves/${props.gameSlug}`, {
-      body: new Blob([payload], { type: "application/octet-stream" }),
-      credentials: "same-origin",
-      headers: {
-        "content-type": "application/octet-stream",
-      },
-      method: "PUT",
-    });
-
-    saveMessage.value = `Sauvegarde VPS terminee (${authUser.value?.username ?? "compte"})`;
-  } catch (error) {
-    saveError.value = getErrorMessage(error, "Impossible de sauvegarder sur le VPS.");
-  } finally {
-    isSavingToVps.value = false;
-  }
-};
-
 const saveToVps = async () => {
   await refreshSession();
 
@@ -263,7 +207,7 @@ const saveToVps = async () => {
     return;
   }
 
-  await uploadVpsSave();
+  await saveVpsSave();
 };
 
 const submitLogin = async () => {
@@ -278,13 +222,12 @@ const submitLogin = async () => {
 
   if (shouldSaveAfterLogin.value) {
     shouldSaveAfterLogin.value = false;
-    await uploadVpsSave();
+    await saveVpsSave();
   }
 };
 
 const logoutFromVps = async () => {
-  saveError.value = "";
-  saveMessage.value = "";
+  clearVpsSyncFeedback();
 
   try {
     await logout();
