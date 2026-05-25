@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import type { DosAuthUsername } from "~/composables/useDosAuth";
 
 const props = defineProps<{
@@ -12,6 +12,7 @@ const isLoginDialogOpen = ref(false);
 const loginUsername = ref<DosAuthUsername>("admin");
 const loginPassword = ref("");
 const shouldSaveAfterLogin = ref(false);
+const vpsSyncAction = ref<"restore" | "save" | "logout" | null>(null);
 const {
   clearLoginError,
   clearSession,
@@ -40,6 +41,7 @@ const {
 const {
   clearFeedback: clearVpsSyncFeedback,
   error: saveError,
+  isLoading: isLoadingFromVps,
   isSaving: isSavingToVps,
   loadVpsSave,
   message: saveMessage,
@@ -53,8 +55,79 @@ const {
   user: authUser,
 });
 
+let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
+
 const getErrorMessage = (error: unknown, fallbackMessage: string) =>
   error instanceof Error ? error.message : fallbackMessage;
+
+const clearFeedbackTimer = () => {
+  if (!feedbackTimer) {
+    return;
+  }
+
+  clearTimeout(feedbackTimer);
+  feedbackTimer = null;
+};
+
+const clearVpsFeedback = () => {
+  clearFeedbackTimer();
+  clearVpsSyncFeedback();
+  vpsSyncAction.value = null;
+};
+
+const scheduleFeedbackClear = () => {
+  clearFeedbackTimer();
+
+  feedbackTimer = setTimeout(() => {
+    clearVpsFeedback();
+  }, 4500);
+};
+
+const vpsSyncFeedback = computed(() => {
+  if (saveError.value) {
+    return {
+      text: saveError.value,
+      tone: "error",
+    } as const;
+  }
+
+  if (isSavingToVps.value) {
+    return {
+      text: "Sauvegarde en cours...",
+      tone: "pending",
+    } as const;
+  }
+
+  if (isLoadingFromVps.value) {
+    return {
+      text: "Chargement sauvegarde...",
+      tone: "pending",
+    } as const;
+  }
+
+  if (!saveMessage.value) {
+    return null;
+  }
+
+  if (vpsSyncAction.value === "restore") {
+    return {
+      text: "Sauvegarde chargee",
+      tone: "success",
+    } as const;
+  }
+
+  if (vpsSyncAction.value === "save") {
+    return {
+      text: "Progression sauvegardee",
+      tone: "success",
+    } as const;
+  }
+
+  return {
+    text: saveMessage.value,
+    tone: "success",
+  } as const;
+});
 
 const openLoginDialog = () => {
   releaseKeyboardFocus();
@@ -70,6 +143,8 @@ const saveToVps = async () => {
     return;
   }
 
+  clearFeedbackTimer();
+  vpsSyncAction.value = "save";
   await saveVpsSave();
 };
 
@@ -85,16 +160,19 @@ const submitLogin = async () => {
 
   if (shouldSaveAfterLogin.value) {
     shouldSaveAfterLogin.value = false;
+    clearFeedbackTimer();
+    vpsSyncAction.value = "save";
     await saveVpsSave();
   }
 };
 
 const logoutFromVps = async () => {
-  clearVpsSyncFeedback();
+  clearVpsFeedback();
 
   try {
     await logout();
     closeLoginDialog();
+    vpsSyncAction.value = "logout";
     saveMessage.value = "Session VPS fermee";
   } catch (error) {
     saveError.value = getErrorMessage(error, "Deconnexion impossible.");
@@ -108,19 +186,39 @@ const closeLoginDialog = () => {
   loginPassword.value = "";
 };
 
+const restoreVpsSave = async () => {
+  await refreshSession();
+
+  if (!authUser.value) {
+    return;
+  }
+
+  clearFeedbackTimer();
+  vpsSyncAction.value = "restore";
+  await loadVpsSave();
+
+  if (!saveMessage.value && !saveError.value) {
+    vpsSyncAction.value = null;
+  }
+};
+
 defineExpose({
   saveToVps,
 });
 
 onMounted(() => {
-  void startPlayer(async () => {
-    await refreshSession();
-    await loadVpsSave();
-  });
+  void startPlayer(restoreVpsSave);
 });
 
 onBeforeUnmount(() => {
+  clearFeedbackTimer();
   stopPlayer();
+});
+
+watch(saveMessage, (message) => {
+  if (message) {
+    scheduleFeedbackClear();
+  }
 });
 </script>
 
@@ -146,20 +244,38 @@ onBeforeUnmount(() => {
     </div>
 
     <div
-      v-if="saveMessage || saveError || isSavingToVps"
-      class="pointer-events-none absolute bottom-4 left-4 z-10 max-w-sm border border-neon-cyan/40 bg-dark-card/95 px-4 py-3 shadow-lg shadow-neon-cyan/20">
-      <p class="font-pixel text-[9px] leading-5 text-neon-cyan">
-        {{ isSavingToVps ? "Sauvegarde VPS..." : saveError || saveMessage }}
-      </p>
+      v-if="vpsSyncFeedback"
+      class="pointer-events-none absolute inset-x-3 bottom-3 z-10 flex justify-center sm:inset-x-auto sm:left-4 sm:justify-start"
+      :role="vpsSyncFeedback.tone === 'error' ? 'alert' : 'status'"
+      aria-live="polite">
+      <div
+        class="max-w-[calc(100vw-1.5rem)] border bg-black/70 px-3 py-2 shadow-lg backdrop-blur-[1px] sm:max-w-sm"
+        :class="{
+          'border-red-400/60 shadow-red-500/15': vpsSyncFeedback.tone === 'error',
+          'border-neon-cyan/35 shadow-neon-cyan/15': vpsSyncFeedback.tone === 'pending',
+          'border-green-400/45 shadow-green-400/15': vpsSyncFeedback.tone === 'success',
+        }">
+        <p
+          class="font-pixel text-[8px] leading-5 sm:text-[9px]"
+          :class="{
+            'text-red-200': vpsSyncFeedback.tone === 'error',
+            'text-neon-cyan': vpsSyncFeedback.tone === 'pending',
+            'text-green-300': vpsSyncFeedback.tone === 'success',
+          }">
+          {{ vpsSyncFeedback.text }}
+        </p>
+      </div>
     </div>
 
     <div
       v-if="authUser"
-      class="absolute right-4 top-4 z-10 flex items-center gap-2 border border-neon-cyan/40 bg-dark-card/90 px-3 py-2 shadow-lg shadow-neon-cyan/20">
-      <span class="font-pixel text-[9px] leading-5 text-neon-cyan">VPS {{ authUser.username }}</span>
+      class="absolute right-3 top-3 z-10 flex max-w-[calc(100%-1.5rem)] items-center gap-2 border border-neon-cyan/25 bg-black/55 px-2 py-1 shadow-md shadow-neon-cyan/10 backdrop-blur-[1px] sm:right-4 sm:top-4">
+      <span class="truncate font-pixel text-[8px] leading-5 text-neon-cyan sm:text-[9px]">
+        Compte {{ authUser.username }}
+      </span>
       <button
         type="button"
-        class="text-xs leading-none text-gray-300 hover:text-white disabled:opacity-60"
+        class="shrink-0 border-l border-neon-cyan/25 pl-2 text-[10px] leading-none text-gray-300 hover:text-white disabled:opacity-60 sm:text-xs"
         :disabled="isLoggingOut"
         @click="logoutFromVps">
         {{ isLoggingOut ? "..." : "Deconnexion" }}

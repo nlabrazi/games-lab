@@ -278,7 +278,7 @@ describe("JsDosPlayer", () => {
       },
     });
 
-    expect(wrapper.text()).toContain("VPS guest");
+    expect(wrapper.text()).toContain("Compte guest");
 
     await wrapper.get("button").trigger("click");
 
@@ -287,7 +287,7 @@ describe("JsDosPlayer", () => {
         credentials: "same-origin",
         method: "POST",
       });
-      expect(wrapper.text()).not.toContain("VPS guest");
+      expect(wrapper.text()).not.toContain("Compte guest");
       expect(wrapper.text()).toContain("Session VPS fermee");
     });
   });
@@ -389,7 +389,7 @@ describe("JsDosPlayer", () => {
       method: "PUT",
     });
     expect(uploadedPayload).toEqual(localPayload);
-    expect(wrapper.text()).toContain("Sauvegarde VPS terminee (admin)");
+    expect(wrapper.text()).toContain("Progression sauvegardee");
   });
 
   it("uploads the local js-dos save from the guest cache database used by js-dos", async () => {
@@ -419,7 +419,7 @@ describe("JsDosPlayer", () => {
     const uploadedPayload = new Uint8Array(await putCall[1].body.arrayBuffer());
 
     expect(uploadedPayload).toEqual(localPayload);
-    expect(wrapper.text()).toContain("Sauvegarde VPS terminee (admin)");
+    expect(wrapper.text()).toContain("Progression sauvegardee");
   });
 
   it("uploads a Blob local save from the js-dos cache database", async () => {
@@ -457,7 +457,7 @@ describe("JsDosPlayer", () => {
     const uploadedPayload = new Uint8Array(await matchingCall[1].body.arrayBuffer());
 
     expect(uploadedPayload).toEqual(localPayload);
-    expect(wrapper.text()).toContain("Sauvegarde VPS terminee (admin)");
+    expect(wrapper.text()).toContain("Progression sauvegardee");
   });
 
   it("shows a user-facing error when IndexedDB cannot be read", async () => {

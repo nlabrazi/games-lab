@@ -6,6 +6,7 @@ import { findDosGame } from "~/data/dosGames";
 const route = useRoute();
 const config = useRuntimeConfig();
 const player = ref<InstanceType<typeof JsDosPlayer> | null>(null);
+const { user: dosAuthUser } = useDosAuth();
 
 const gameSlug = computed(() => {
   const routeSlug = route.params.slug;
@@ -37,6 +38,10 @@ const saveToVps = () => {
   void player.value?.saveToVps();
 };
 
+const saveButtonLabel = computed(() =>
+  dosAuthUser.value ? "Sauvegarder la progression" : "Se connecter pour sauvegarder",
+);
+
 useHead(() => ({
   title: `${game.value.title} - MS-DOS`,
 }));
@@ -47,7 +52,13 @@ useHead(() => ({
     <div class="flex items-center justify-between gap-3 border-b border-neon-cyan/30 bg-dark-card px-4 py-3">
       <div class="flex shrink-0 items-center gap-3">
         <NuxtLink to="/" class="btn-pixel text-xs">Accueil</NuxtLink>
-        <button type="button" class="btn-pixel text-xs" @click="saveToVps">Sauvegarder VPS</button>
+        <button
+          type="button"
+          class="btn-pixel max-w-[12rem] shrink-0 whitespace-normal text-center !px-3 !py-2 !text-[8px] !leading-4 sm:max-w-none sm:whitespace-nowrap sm:!px-5 sm:!py-3 sm:!text-xs"
+          :aria-label="saveButtonLabel"
+          @click="saveToVps">
+          {{ saveButtonLabel }}
+        </button>
       </div>
       <h1 class="truncate text-right font-pixel text-[10px] text-neon-cyan sm:text-sm">
         MS-DOS / {{ game.title }}

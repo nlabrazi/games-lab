@@ -25,7 +25,7 @@ describe("MS-DOS routes", () => {
     expect(wrapper.text()).toContain("Catalogue MS-DOS");
     expect(wrapper.text()).toContain("Lands of Lore: The Throne of Chaos");
     expect(wrapper.text()).toContain("Lancer");
-    expect(wrapper.text()).not.toContain("Sauvegarder VPS");
+    expect(wrapper.text()).not.toContain("Se connecter pour sauvegarder");
   });
 
   it("renders the game player route for an available MS-DOS game", async () => {
@@ -33,7 +33,7 @@ describe("MS-DOS routes", () => {
       route: "/games/ms-dos/lands-of-lore",
     });
 
-    expect(wrapper.text()).toContain("Sauvegarder VPS");
+    expect(wrapper.text()).toContain("Se connecter pour sauvegarder");
     expect(wrapper.text()).toContain("MS-DOS / Lands of Lore: The Throne of Chaos");
     expect(wrapper.text()).toContain("Mock DOS Player Lands of Lore: The Throne of Chaos");
     expect(wrapper.text()).not.toContain("Catalogue MS-DOS");
