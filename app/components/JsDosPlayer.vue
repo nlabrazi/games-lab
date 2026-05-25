@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import type { DosAuthUsername } from "~/composables/useDosAuth";
 
 interface DosOptions {
   url: string;
@@ -23,15 +24,6 @@ interface DosInstance {
   stop?: () => Promise<void>;
 }
 
-interface AuthUser {
-  username: "admin" | "guest";
-}
-
-interface AuthSessionResponse {
-  authenticated: boolean;
-  user: AuthUser | null;
-}
-
 declare global {
   interface Window {
     Dos?: (element: HTMLDivElement, options: Partial<DosOptions>) => DosInstance;
@@ -49,18 +41,25 @@ const playerElement = ref<HTMLDivElement | null>(null);
 const statusMessage = ref("Chargement du lecteur DOS...");
 const errorMessage = ref("");
 const isReady = ref(false);
-const authUser = ref<AuthUser | null>(null);
 const isLoginDialogOpen = ref(false);
-const loginUsername = ref<AuthUser["username"]>("admin");
+const loginUsername = ref<DosAuthUsername>("admin");
 const loginPassword = ref("");
 const loginPasswordInput = ref<HTMLInputElement | null>(null);
-const loginError = ref("");
-const isLoggingIn = ref(false);
-const isLoggingOut = ref(false);
 const isSavingToVps = ref(false);
 const saveMessage = ref("");
 const saveError = ref("");
 const shouldSaveAfterLogin = ref(false);
+const {
+  clearLoginError,
+  clearSession,
+  isLoggingIn,
+  isLoggingOut,
+  login,
+  loginError,
+  logout,
+  refreshSession,
+  user: authUser,
+} = useDosAuth();
 
 let dosInstance: DosInstance | null = null;
 let jsDosAssetsPromise: Promise<void> | null = null;
@@ -239,18 +238,6 @@ const writeJsDosSaveBundle = async (key: string, payload: ArrayBuffer) => {
   }
 };
 
-const fetchAuthSession = async () => {
-  try {
-    const session = await $fetch<AuthSessionResponse>("/api/auth/session", {
-      credentials: "same-origin",
-    });
-
-    authUser.value = session.user;
-  } catch {
-    authUser.value = null;
-  }
-};
-
 const restoreVpsSave = async () => {
   if (!authUser.value) {
     return;
@@ -266,7 +253,7 @@ const restoreVpsSave = async () => {
     }
 
     if (response.status === 401) {
-      authUser.value = null;
+      clearSession();
       return;
     }
 
@@ -298,7 +285,7 @@ const startPlayer = async () => {
   }
 
   try {
-    await fetchAuthSession();
+    await refreshSession();
     await restoreVpsSave();
     await loadJsDosAssets();
 
@@ -395,7 +382,7 @@ const uploadVpsSave = async () => {
 };
 
 const saveToVps = async () => {
-  await fetchAuthSession();
+  await refreshSession();
 
   if (!authUser.value) {
     shouldSaveAfterLogin.value = true;
@@ -407,59 +394,38 @@ const saveToVps = async () => {
 };
 
 const submitLogin = async () => {
-  loginError.value = "";
-  isLoggingIn.value = true;
+  const loggedInUser = await login(loginUsername.value, loginPassword.value);
 
-  try {
-    const session = await $fetch<AuthSessionResponse>("/api/auth/login", {
-      body: {
-        password: loginPassword.value,
-        username: loginUsername.value,
-      },
-      credentials: "same-origin",
-      method: "POST",
-    });
+  if (!loggedInUser) {
+    return;
+  }
 
-    authUser.value = session.user;
-    loginPassword.value = "";
-    isLoginDialogOpen.value = false;
+  loginPassword.value = "";
+  isLoginDialogOpen.value = false;
 
-    if (shouldSaveAfterLogin.value) {
-      shouldSaveAfterLogin.value = false;
-      await uploadVpsSave();
-    }
-  } catch (error) {
-    loginError.value = getErrorMessage(error, "Connexion impossible.");
-  } finally {
-    isLoggingIn.value = false;
+  if (shouldSaveAfterLogin.value) {
+    shouldSaveAfterLogin.value = false;
+    await uploadVpsSave();
   }
 };
 
 const logoutFromVps = async () => {
   saveError.value = "";
   saveMessage.value = "";
-  isLoggingOut.value = true;
 
   try {
-    await $fetch<AuthSessionResponse>("/api/auth/logout", {
-      credentials: "same-origin",
-      method: "POST",
-    });
-
-    authUser.value = null;
+    await logout();
     closeLoginDialog();
     saveMessage.value = "Session VPS fermee";
   } catch (error) {
     saveError.value = getErrorMessage(error, "Deconnexion impossible.");
-  } finally {
-    isLoggingOut.value = false;
   }
 };
 
 const closeLoginDialog = () => {
   shouldSaveAfterLogin.value = false;
   isLoginDialogOpen.value = false;
-  loginError.value = "";
+  clearLoginError();
   loginPassword.value = "";
 };
 
