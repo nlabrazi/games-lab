@@ -3,7 +3,6 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "auth:hash": "node scripts/hash-password.mjs",
     "dev": "nuxt dev",
     "build": "nuxt build",
     "generate": "nuxt generate",

@@ -1,16 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { findDosGame } from "~/data/dosGames";
-
-interface JsDosPlayerHandle {
-  isPlayerReady: () => boolean;
-  releaseKeyboardFocus: () => void;
-  triggerJsDosSave: () => Promise<void>;
-}
 
 const route = useRoute();
 const config = useRuntimeConfig();
-const player = ref<JsDosPlayerHandle | null>(null);
 
 const gameSlug = computed(() => {
   const routeSlug = route.params.slug;
@@ -38,55 +31,6 @@ const bundleUrl = computed(() =>
   joinUrl(String(config.public.dosGamesBaseUrl), game.value.bundleFile),
 );
 
-const {
-  authUser,
-  isAuthenticated,
-  isLoggingOut,
-  isRestoringSave,
-  isSavingToVps,
-  lastSyncTime,
-  openLoginDialog,
-  logoutFromVps,
-  saveToVps,
-} = useDosSaveWorkflow({
-  getBundleUrl: () => bundleUrl.value,
-  getGameSlug: () => game.value.slug,
-  isPlayerReady: () => player.value?.isPlayerReady() ?? false,
-  releaseKeyboardFocus: () => {
-    player.value?.releaseKeyboardFocus();
-  },
-  triggerJsDosSave: async () => {
-    if (!player.value) {
-      throw new Error("Le lecteur DOS n'est pas encore disponible.");
-    }
-
-    await player.value.triggerJsDosSave();
-  },
-});
-
-const lastSavedAtLabel = computed(() => {
-  if (!lastSyncTime.value) {
-    return "";
-  }
-
-  return new Intl.DateTimeFormat("fr-FR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(lastSyncTime.value);
-});
-
-const handleLogin = () => {
-  openLoginDialog();
-};
-
-const handleSave = () => {
-  void saveToVps();
-};
-
-const handleLogout = () => {
-  void logoutFromVps();
-};
-
 useHead(() => ({
   title: `${game.value.title} - MS-DOS`,
 }));
@@ -94,20 +38,18 @@ useHead(() => ({
 
 <template>
   <main class="min-h-screen bg-black">
-    <DosSaveToolbar
-      :is-authenticated="isAuthenticated"
-      :is-logging-out="isLoggingOut"
-      :is-restoring="isRestoringSave"
-      :is-saving="isSavingToVps"
-      :last-saved-at-label="lastSavedAtLabel"
-      :title="game.title"
-      :username="authUser?.username ?? ''"
-      @login="handleLogin"
-      @logout="handleLogout"
-      @save="handleSave" />
+    <header class="border-b border-neon-cyan/30 bg-dark-card px-4 py-3">
+      <div class="flex flex-wrap items-center gap-3">
+        <NuxtLink to="/" class="btn-pixel text-xs">Accueil</NuxtLink>
+
+        <h1 class="min-w-0 flex-1 font-pixel text-[10px] leading-5 text-neon-cyan sm:text-sm">
+          <span class="block truncate">{{ game.title }}</span>
+        </h1>
+      </div>
+    </header>
 
     <ClientOnly>
-      <JsDosPlayer ref="player" :bundle-url="bundleUrl" :game-slug="game.slug" :title="game.title" />
+      <JsDosPlayer :bundle-url="bundleUrl" :title="game.title" />
 
       <template #fallback>
         <section class="flex h-[calc(100vh-57px)] items-center justify-center bg-black px-4 text-center">

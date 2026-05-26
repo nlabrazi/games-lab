@@ -3,52 +3,16 @@ import { onBeforeUnmount, onMounted } from "vue";
 
 const props = defineProps<{
   bundleUrl: string;
-  gameSlug: string;
   title: string;
 }>();
 
-const {
-  errorMessage,
-  isPlayerReady,
-  isReady,
-  playerElement,
-  releaseKeyboardFocus,
-  startPlayer,
-  statusMessage,
-  stopPlayer,
-  triggerJsDosSave,
-} = useJsDosPlayer({
-  getBundleUrl: () => props.bundleUrl,
-});
-
-const {
-  closeLoginDialog,
-  isLoggingIn,
-  isLoginDialogOpen,
-  loginError,
-  loginPassword,
-  loginUsername,
-  restoreVpsSave,
-  saveToVps,
-  submitLogin,
-  syncFeedback,
-} = useDosSaveWorkflow({
-  getBundleUrl: () => props.bundleUrl,
-  getGameSlug: () => props.gameSlug,
-  isPlayerReady,
-  releaseKeyboardFocus,
-  triggerJsDosSave,
-});
-
-defineExpose({
-  isPlayerReady,
-  releaseKeyboardFocus,
-  saveToVps,
-  triggerJsDosSave,
-});
+const { errorMessage, isReady, playerElement, startPlayer, statusMessage, stopPlayer } =
+  useJsDosPlayer({
+    getBundleUrl: () => props.bundleUrl,
+  });
 
 onMounted(() => {
-  void startPlayer(restoreVpsSave);
+  void startPlayer();
 });
 
 onBeforeUnmount(() => {
@@ -76,39 +40,6 @@ onBeforeUnmount(() => {
         </p>
       </div>
     </div>
-
-    <div
-      v-if="syncFeedback"
-      class="pointer-events-none absolute inset-x-3 bottom-3 z-10 flex justify-center sm:inset-x-auto sm:left-4 sm:justify-start"
-      :role="syncFeedback.tone === 'error' ? 'alert' : 'status'"
-      aria-live="polite">
-      <div
-        class="max-w-[calc(100vw-1.5rem)] border bg-black/70 px-3 py-2 shadow-lg backdrop-blur-[1px] sm:max-w-sm"
-        :class="{
-          'border-red-400/60 shadow-red-500/15': syncFeedback.tone === 'error',
-          'border-neon-cyan/35 shadow-neon-cyan/15': syncFeedback.tone === 'pending',
-          'border-green-400/45 shadow-green-400/15': syncFeedback.tone === 'success',
-        }">
-        <p
-          class="font-pixel text-[8px] leading-5 sm:text-[9px]"
-          :class="{
-            'text-red-200': syncFeedback.tone === 'error',
-            'text-neon-cyan': syncFeedback.tone === 'pending',
-            'text-green-300': syncFeedback.tone === 'success',
-          }">
-          {{ syncFeedback.text }}
-        </p>
-      </div>
-    </div>
-    <DosAuthModal
-      v-model:password="loginPassword"
-      v-model:username="loginUsername"
-      :error="loginError"
-      :loading="isLoggingIn"
-      :open="isLoginDialogOpen"
-      @close="closeLoginDialog"
-      @submit="submitLogin" />
-
     <span v-if="isReady" class="sr-only">Lecteur MS-DOS pret</span>
   </section>
 </template>
