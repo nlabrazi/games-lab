@@ -60,7 +60,7 @@ export const games: Game[] = [
     title: "Lancer MS-DOS",
     shortDesc: "Lanceur de jeux DOS via js-dos",
     longDesc:
-      "Un lanceur generique pour jouer aux bundles MS-DOS heberges sur le VPS. Lands of Lore est le premier jeu branche, les suivants pourront utiliser la meme page.",
+      "Un lanceur generique pour jouer aux bundles MS-DOS via js-dos. Lands of Lore est le premier jeu branche, les suivants pourront utiliser la meme page.",
     icon: "💾",
     link: "/games/ms-dos",
     color: "#3498db",
