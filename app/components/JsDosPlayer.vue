@@ -1,15 +1,57 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted } from "vue";
+import { onBeforeUnmount, onMounted, ref } from "vue";
 
 const props = defineProps<{
   bundleUrl: string;
   title: string;
 }>();
 
-const { errorMessage, isReady, playerElement, startPlayer, statusMessage, stopPlayer } =
-  useJsDosPlayer({
-    getBundleUrl: () => props.bundleUrl,
-  });
+const saveFileInput = ref<HTMLInputElement | null>(null);
+const {
+  errorMessage,
+  exportSaveFile,
+  importSaveFile,
+  isProcessingSaveFile,
+  isReady,
+  playerElement,
+  startPlayer,
+  statusMessage,
+  stopPlayer,
+} = useJsDosPlayer({
+  getBundleUrl: () => props.bundleUrl,
+});
+
+const handleExportSave = async () => {
+  await exportSaveFile();
+};
+
+const openSaveImportDialog = () => {
+  saveFileInput.value?.click();
+};
+
+const handleSaveImport = async (event: Event) => {
+  const input = event.target;
+
+  if (!(input instanceof HTMLInputElement)) {
+    return;
+  }
+
+  const [file] = Array.from(input.files || []);
+  input.value = "";
+
+  if (!file) {
+    return;
+  }
+
+  await importSaveFile(file);
+};
+
+defineExpose({
+  exportSaveFile: handleExportSave,
+  isProcessingSaveFile,
+  isReady,
+  openSaveImportDialog,
+});
 
 onMounted(() => {
   void startPlayer();
@@ -22,11 +64,24 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="dos-player-shell relative h-full min-h-[calc(100vh-57px)] overflow-hidden bg-black">
+    <input
+      ref="saveFileInput"
+      class="hidden"
+      type="file"
+      accept=".jdsave,.jsdos,application/octet-stream"
+      @change="handleSaveImport" />
+
     <div
       ref="playerElement"
       class="dos-player h-full min-h-[calc(100vh-57px)] w-full"
       data-theme="dark"
       :aria-label="title" />
+
+    <div
+      class="absolute bottom-4 left-4 z-10 max-w-md border border-neon-cyan/35 bg-black/70 px-3 py-2 text-[10px] text-neon-cyan backdrop-blur-sm">
+      Sauvegarde locale via js-dos. Exporte un fichier de backup pour ce bundle, puis importe-le dans ce
+      meme jeu.
+    </div>
 
     <div
       v-if="statusMessage || errorMessage"
