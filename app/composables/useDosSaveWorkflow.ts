@@ -1,4 +1,4 @@
-import { computed, onScopeDispose, ref, watch } from "vue";
+import { computed, onScopeDispose, watch } from "vue";
 import type { DosAuthUsername } from "~/composables/useDosAuth";
 
 interface UseDosSaveWorkflowOptions {
@@ -19,11 +19,18 @@ export const useDosSaveWorkflow = ({
   releaseKeyboardFocus,
   triggerJsDosSave,
 }: UseDosSaveWorkflowOptions) => {
-  const isLoginDialogOpen = ref(false);
-  const loginUsername = ref<DosAuthUsername>("admin");
-  const loginPassword = ref("");
-  const shouldSaveAfterLogin = ref(false);
-  const syncAction = ref<"restore" | "save" | "logout" | null>(null);
+  const stateKeyPrefix = `dos-save-workflow:${getGameSlug()}`;
+  const isLoginDialogOpen = useState(`${stateKeyPrefix}:login-dialog-open`, () => false);
+  const loginUsername = useState<DosAuthUsername>(
+    `${stateKeyPrefix}:login-username`,
+    () => "admin",
+  );
+  const loginPassword = useState(`${stateKeyPrefix}:login-password`, () => "");
+  const shouldSaveAfterLogin = useState(`${stateKeyPrefix}:save-after-login`, () => false);
+  const syncAction = useState<"restore" | "save" | "logout" | null>(
+    `${stateKeyPrefix}:sync-action`,
+    () => null,
+  );
   const {
     clearLoginError,
     clearSession,
@@ -49,9 +56,21 @@ export const useDosSaveWorkflow = ({
     getBundleUrl,
     getGameSlug,
     isPlayerReady,
+    stateKeyPrefix,
     triggerJsDosSave,
     user: authUser,
   });
+
+  const resetTransientUiState = () => {
+    clearFeedback();
+    clearLoginError();
+    isLoginDialogOpen.value = false;
+    loginPassword.value = "";
+    shouldSaveAfterLogin.value = false;
+    syncAction.value = null;
+  };
+
+  resetTransientUiState();
 
   let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -123,6 +142,8 @@ export const useDosSaveWorkflow = ({
       tone: "success",
     } as const;
   });
+  const isAuthenticated = computed(() => Boolean(authUser.value));
+  const isRestoringSave = computed(() => isLoadingFromVps.value);
 
   const openLoginDialog = () => {
     releaseKeyboardFocus();
@@ -210,9 +231,12 @@ export const useDosSaveWorkflow = ({
   return {
     authUser,
     closeLoginDialog,
+    isAuthenticated,
     isLoggingIn,
     isLoggingOut,
     isLoginDialogOpen,
+    isRestoringSave,
+    isSavingToVps,
     lastSyncTime,
     loginError,
     loginPassword,

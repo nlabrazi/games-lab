@@ -33,8 +33,9 @@ describe("MS-DOS routes", () => {
       route: "/games/ms-dos/lands-of-lore",
     });
 
-    expect(wrapper.text()).toContain("Se connecter pour sauvegarder");
-    expect(wrapper.text()).toContain("MS-DOS / Lands of Lore: The Throne of Chaos");
+    expect(wrapper.text()).toContain("Sauvegarde en ligne: Non connecte");
+    expect(wrapper.text()).toContain("Se connecter");
+    expect(wrapper.text()).toContain("Lands of Lore: The Throne of Chaos");
     expect(wrapper.text()).toContain("Mock DOS Player Lands of Lore: The Throne of Chaos");
     expect(wrapper.text()).not.toContain("Catalogue MS-DOS");
   });

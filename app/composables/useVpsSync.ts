@@ -1,4 +1,4 @@
-import { type Ref, computed, ref } from "vue";
+import { type Ref, computed } from "vue";
 import type { DosAuthUser } from "~/composables/useDosAuth";
 import { readJsDosLocalSaveBundle, writeJsDosLocalSaveBundle } from "~/utils/jsDosLocalPersistence";
 
@@ -13,6 +13,7 @@ interface UseVpsSyncOptions {
   getBundleUrl: () => string;
   getGameSlug: () => string;
   isPlayerReady: () => boolean;
+  stateKeyPrefix?: string;
   triggerJsDosSave: () => Promise<void>;
   user: Ref<DosAuthUser | null>;
 }
@@ -34,13 +35,14 @@ export const useVpsSync = ({
   getBundleUrl,
   getGameSlug,
   isPlayerReady,
+  stateKeyPrefix = `dos-save-sync:${getGameSlug()}`,
   triggerJsDosSave,
   user,
 }: UseVpsSyncOptions) => {
-  const syncStatus = ref<VpsSyncStatus>("idle");
-  const lastSyncTime = ref<Date | null>(null);
-  const message = ref("");
-  const error = ref("");
+  const syncStatus = useState<VpsSyncStatus>(`${stateKeyPrefix}:status`, () => "idle");
+  const lastSyncTime = useState<Date | null>(`${stateKeyPrefix}:last-sync-time`, () => null);
+  const message = useState(`${stateKeyPrefix}:message`, () => "");
+  const error = useState(`${stateKeyPrefix}:error`, () => "");
   const isSaving = computed(() => syncStatus.value === "saving");
   const isLoading = computed(() => syncStatus.value === "loading");
 

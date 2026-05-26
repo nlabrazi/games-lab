@@ -271,25 +271,18 @@ describe("JsDosPlayer", () => {
     });
   });
 
-  it("shows the active VPS session and logs out", async () => {
+  it("does not render account actions inside the player shell", async () => {
     const { $fetchMock, wrapper } = await mountPlayer({
       sessionUser: {
         username: "guest",
       },
     });
 
-    expect(wrapper.text()).toContain("Compte guest");
-
-    await wrapper.get("button").trigger("click");
-
-    await waitFor(() => {
-      expect($fetchMock).toHaveBeenCalledWith("/api/auth/logout", {
-        credentials: "same-origin",
-        method: "POST",
-      });
-      expect(wrapper.text()).not.toContain("Compte guest");
-      expect(wrapper.text()).toContain("Session VPS fermee");
+    expect($fetchMock).toHaveBeenCalledWith("/api/auth/session", {
+      credentials: "same-origin",
     });
+    expect(wrapper.text()).not.toContain("Compte guest");
+    expect(wrapper.text()).not.toContain("Deconnexion");
   });
 
   it("restores the VPS save into IndexedDB using the bundle URL key", async () => {
@@ -338,7 +331,7 @@ describe("JsDosPlayer", () => {
 
       const passwordInput = wrapper.get('input[type="password"]').element;
 
-      expect(focusSpy).toHaveBeenCalled();
+      await waitFor(() => expect(focusSpy).toHaveBeenCalled());
 
       passwordInput.dispatchEvent(
         new KeyboardEvent("keydown", {

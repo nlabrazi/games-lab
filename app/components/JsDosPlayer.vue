@@ -22,15 +22,12 @@ const {
 });
 
 const {
-  authUser,
   closeLoginDialog,
   isLoggingIn,
-  isLoggingOut,
   isLoginDialogOpen,
   loginError,
   loginPassword,
   loginUsername,
-  logoutFromVps,
   restoreVpsSave,
   saveToVps,
   submitLogin,
@@ -44,7 +41,10 @@ const {
 });
 
 defineExpose({
+  isPlayerReady,
+  releaseKeyboardFocus,
   saveToVps,
+  triggerJsDosSave,
 });
 
 onMounted(() => {
@@ -100,22 +100,6 @@ onBeforeUnmount(() => {
         </p>
       </div>
     </div>
-
-    <div
-      v-if="authUser"
-      class="absolute right-3 top-3 z-10 flex max-w-[calc(100%-1.5rem)] items-center gap-2 border border-neon-cyan/25 bg-black/55 px-2 py-1 shadow-md shadow-neon-cyan/10 backdrop-blur-[1px] sm:right-4 sm:top-4">
-      <span class="truncate font-pixel text-[8px] leading-5 text-neon-cyan sm:text-[9px]">
-        Compte {{ authUser.username }}
-      </span>
-      <button
-        type="button"
-        class="shrink-0 border-l border-neon-cyan/25 pl-2 text-[10px] leading-none text-gray-300 hover:text-white disabled:opacity-60 sm:text-xs"
-        :disabled="isLoggingOut"
-        @click="logoutFromVps">
-        {{ isLoggingOut ? "..." : "Deconnexion" }}
-      </button>
-    </div>
-
     <DosAuthModal
       v-model:password="loginPassword"
       v-model:username="loginUsername"
