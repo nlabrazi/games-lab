@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import type { DosAuthUsername } from "~/composables/useDosAuth";
+import { onBeforeUnmount, onMounted } from "vue";
 
 const props = defineProps<{
   bundleUrl: string;
@@ -8,22 +7,6 @@ const props = defineProps<{
   title: string;
 }>();
 
-const isLoginDialogOpen = ref(false);
-const loginUsername = ref<DosAuthUsername>("admin");
-const loginPassword = ref("");
-const shouldSaveAfterLogin = ref(false);
-const vpsSyncAction = ref<"restore" | "save" | "logout" | null>(null);
-const {
-  clearLoginError,
-  clearSession,
-  isLoggingIn,
-  isLoggingOut,
-  login,
-  loginError,
-  logout,
-  refreshSession,
-  user: authUser,
-} = useDosAuth();
 const {
   errorMessage,
   isPlayerReady,
@@ -39,168 +22,26 @@ const {
 });
 
 const {
-  clearFeedback: clearVpsSyncFeedback,
-  error: saveError,
-  isLoading: isLoadingFromVps,
-  isSaving: isSavingToVps,
-  loadVpsSave,
-  message: saveMessage,
-  saveVpsSave,
-} = useVpsSync({
-  clearSession,
+  authUser,
+  closeLoginDialog,
+  isLoggingIn,
+  isLoggingOut,
+  isLoginDialogOpen,
+  loginError,
+  loginPassword,
+  loginUsername,
+  logoutFromVps,
+  restoreVpsSave,
+  saveToVps,
+  submitLogin,
+  syncFeedback,
+} = useDosSaveWorkflow({
   getBundleUrl: () => props.bundleUrl,
   getGameSlug: () => props.gameSlug,
   isPlayerReady,
+  releaseKeyboardFocus,
   triggerJsDosSave,
-  user: authUser,
 });
-
-let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
-
-const getErrorMessage = (error: unknown, fallbackMessage: string) =>
-  error instanceof Error ? error.message : fallbackMessage;
-
-const clearFeedbackTimer = () => {
-  if (!feedbackTimer) {
-    return;
-  }
-
-  clearTimeout(feedbackTimer);
-  feedbackTimer = null;
-};
-
-const clearVpsFeedback = () => {
-  clearFeedbackTimer();
-  clearVpsSyncFeedback();
-  vpsSyncAction.value = null;
-};
-
-const scheduleFeedbackClear = () => {
-  clearFeedbackTimer();
-
-  feedbackTimer = setTimeout(() => {
-    clearVpsFeedback();
-  }, 4500);
-};
-
-const vpsSyncFeedback = computed(() => {
-  if (saveError.value) {
-    return {
-      text: saveError.value,
-      tone: "error",
-    } as const;
-  }
-
-  if (isSavingToVps.value) {
-    return {
-      text: "Sauvegarde en cours...",
-      tone: "pending",
-    } as const;
-  }
-
-  if (isLoadingFromVps.value) {
-    return {
-      text: "Chargement sauvegarde...",
-      tone: "pending",
-    } as const;
-  }
-
-  if (!saveMessage.value) {
-    return null;
-  }
-
-  if (vpsSyncAction.value === "restore") {
-    return {
-      text: "Sauvegarde chargee",
-      tone: "success",
-    } as const;
-  }
-
-  if (vpsSyncAction.value === "save") {
-    return {
-      text: "Progression sauvegardee",
-      tone: "success",
-    } as const;
-  }
-
-  return {
-    text: saveMessage.value,
-    tone: "success",
-  } as const;
-});
-
-const openLoginDialog = () => {
-  releaseKeyboardFocus();
-  isLoginDialogOpen.value = true;
-};
-
-const saveToVps = async () => {
-  await refreshSession();
-
-  if (!authUser.value) {
-    shouldSaveAfterLogin.value = true;
-    openLoginDialog();
-    return;
-  }
-
-  clearFeedbackTimer();
-  vpsSyncAction.value = "save";
-  await saveVpsSave();
-};
-
-const submitLogin = async () => {
-  const loggedInUser = await login(loginUsername.value, loginPassword.value);
-
-  if (!loggedInUser) {
-    return;
-  }
-
-  loginPassword.value = "";
-  isLoginDialogOpen.value = false;
-
-  if (shouldSaveAfterLogin.value) {
-    shouldSaveAfterLogin.value = false;
-    clearFeedbackTimer();
-    vpsSyncAction.value = "save";
-    await saveVpsSave();
-  }
-};
-
-const logoutFromVps = async () => {
-  clearVpsFeedback();
-
-  try {
-    await logout();
-    closeLoginDialog();
-    vpsSyncAction.value = "logout";
-    saveMessage.value = "Session VPS fermee";
-  } catch (error) {
-    saveError.value = getErrorMessage(error, "Deconnexion impossible.");
-  }
-};
-
-const closeLoginDialog = () => {
-  shouldSaveAfterLogin.value = false;
-  isLoginDialogOpen.value = false;
-  clearLoginError();
-  loginPassword.value = "";
-};
-
-const restoreVpsSave = async () => {
-  await refreshSession();
-
-  if (!authUser.value) {
-    return;
-  }
-
-  clearFeedbackTimer();
-  vpsSyncAction.value = "restore";
-  await loadVpsSave();
-
-  if (!saveMessage.value && !saveError.value) {
-    vpsSyncAction.value = null;
-  }
-};
 
 defineExpose({
   saveToVps,
@@ -211,14 +52,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  clearFeedbackTimer();
   stopPlayer();
-});
-
-watch(saveMessage, (message) => {
-  if (message) {
-    scheduleFeedbackClear();
-  }
 });
 </script>
 
@@ -244,25 +78,25 @@ watch(saveMessage, (message) => {
     </div>
 
     <div
-      v-if="vpsSyncFeedback"
+      v-if="syncFeedback"
       class="pointer-events-none absolute inset-x-3 bottom-3 z-10 flex justify-center sm:inset-x-auto sm:left-4 sm:justify-start"
-      :role="vpsSyncFeedback.tone === 'error' ? 'alert' : 'status'"
+      :role="syncFeedback.tone === 'error' ? 'alert' : 'status'"
       aria-live="polite">
       <div
         class="max-w-[calc(100vw-1.5rem)] border bg-black/70 px-3 py-2 shadow-lg backdrop-blur-[1px] sm:max-w-sm"
         :class="{
-          'border-red-400/60 shadow-red-500/15': vpsSyncFeedback.tone === 'error',
-          'border-neon-cyan/35 shadow-neon-cyan/15': vpsSyncFeedback.tone === 'pending',
-          'border-green-400/45 shadow-green-400/15': vpsSyncFeedback.tone === 'success',
+          'border-red-400/60 shadow-red-500/15': syncFeedback.tone === 'error',
+          'border-neon-cyan/35 shadow-neon-cyan/15': syncFeedback.tone === 'pending',
+          'border-green-400/45 shadow-green-400/15': syncFeedback.tone === 'success',
         }">
         <p
           class="font-pixel text-[8px] leading-5 sm:text-[9px]"
           :class="{
-            'text-red-200': vpsSyncFeedback.tone === 'error',
-            'text-neon-cyan': vpsSyncFeedback.tone === 'pending',
-            'text-green-300': vpsSyncFeedback.tone === 'success',
+            'text-red-200': syncFeedback.tone === 'error',
+            'text-neon-cyan': syncFeedback.tone === 'pending',
+            'text-green-300': syncFeedback.tone === 'success',
           }">
-          {{ vpsSyncFeedback.text }}
+          {{ syncFeedback.text }}
         </p>
       </div>
     </div>
