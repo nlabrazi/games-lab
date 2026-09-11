@@ -248,9 +248,9 @@ export const storeJsDosSaveBundle = async (
   const bufferToStore =
     saveBundle instanceof Uint8Array
       ? saveBundle.buffer.slice(
-        saveBundle.byteOffset,
-        saveBundle.byteOffset + saveBundle.byteLength,
-      )
+          saveBundle.byteOffset,
+          saveBundle.byteOffset + saveBundle.byteLength,
+        )
       : saveBundle;
 
   await new Promise<void>((resolve, reject) => {
@@ -466,7 +466,6 @@ export const useJsDosPlayer = ({ getBundleUrl, gameSlug, kiosk }: UseJsDosPlayer
           push: async (key: string, bundle: Uint8Array) => {
             // 1. Écriture locale immédiate
             await storeJsDosSaveBundle(key, bundle);
-
           },
           delete: async (key: string) => {
             await deleteJsDosSaveBundle(key);
