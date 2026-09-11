@@ -12,6 +12,7 @@
     "pretest:watch": "nuxt prepare",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:all": "vitest run && playwright test",
     "lint": "biome check .",
     "format": "biome format . --write"
   },
