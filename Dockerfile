@@ -1,4 +1,4 @@
-FROM node:20-alpine AS deps
+FROM node:22-alpine AS deps
 WORKDIR /app
 
 COPY package*.json ./
@@ -26,7 +26,7 @@ RUN npm run test
 RUN npm run build
 
 # Étape 2 : serveur de production (Node.js)
-FROM node:20-alpine AS production
+FROM node:22-alpine AS production
 
 WORKDIR /app
 
