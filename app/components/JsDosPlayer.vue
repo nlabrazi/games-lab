@@ -4,6 +4,7 @@ import { onBeforeUnmount, onMounted, ref } from "vue";
 const props = defineProps<{
   bundleUrl: string;
   title: string;
+  gameSlug?: string;
 }>();
 
 const saveFileInput = ref<HTMLInputElement | null>(null);
@@ -13,16 +14,24 @@ const {
   importSaveFile,
   isProcessingSaveFile,
   isReady,
+  isSaving,
   playerElement,
+  saveGameState,
+  saveSuccessMessage,
   startPlayer,
   statusMessage,
   stopPlayer,
 } = useJsDosPlayer({
   getBundleUrl: () => props.bundleUrl,
+  gameSlug: () => props.gameSlug || "",
 });
 
 const handleExportSave = async () => {
   await exportSaveFile();
+};
+
+const handleManualSave = async () => {
+  await saveGameState();
 };
 
 const openSaveImportDialog = () => {
@@ -48,9 +57,13 @@ const handleSaveImport = async (event: Event) => {
 
 defineExpose({
   exportSaveFile: handleExportSave,
+  importSaveFile,
   isProcessingSaveFile,
   isReady,
+  isSaving,
   openSaveImportDialog,
+  saveGameState: handleManualSave,
+  saveSuccessMessage,
 });
 
 onMounted(() => {
@@ -63,7 +76,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="dos-player-shell relative h-full min-h-[calc(100vh-57px)] overflow-hidden bg-black">
+  <section class="dos-player-shell relative h-full w-full overflow-hidden bg-black">
     <input
       ref="saveFileInput"
       class="hidden"
@@ -73,15 +86,19 @@ onBeforeUnmount(() => {
 
     <div
       ref="playerElement"
-      class="dos-player h-full min-h-[calc(100vh-57px)] w-full"
+      class="dos-player h-full w-full"
       data-theme="dark"
       :aria-label="title" />
 
-    <div
-      class="absolute bottom-4 left-4 z-10 max-w-md border border-neon-cyan/35 bg-black/70 px-3 py-2 text-[10px] text-neon-cyan backdrop-blur-sm">
-      Sauvegarde locale via js-dos. Exporte un fichier de backup pour ce bundle, puis importe-le dans ce
-      meme jeu.
-    </div>
+    <!-- Discret indicateur de synchronisation cloud en cas de succès -->
+    <Transition name="fade">
+      <div
+        v-if="saveSuccessMessage"
+        class="pointer-events-none absolute top-3 right-3 z-30 flex items-center gap-1.5 rounded-full border border-neon-cyan/40 bg-black/80 px-3 py-1 text-[9px] text-neon-cyan shadow-md backdrop-blur-sm">
+        <span class="inline-block h-1.5 w-1.5 rounded-full bg-neon-cyan animate-pulse" />
+        <span>{{ saveSuccessMessage }}</span>
+      </div>
+    </Transition>
 
     <div
       v-if="statusMessage || errorMessage"
@@ -119,8 +136,8 @@ onBeforeUnmount(() => {
   --n: 220 22% 10%;
   --nc: 180 100% 86%;
   width: 100%;
-  min-height: calc(100vh - 57px);
   height: 100%;
+  min-height: 100%;
   background: #000 !important;
   color-scheme: dark;
 }
@@ -131,7 +148,7 @@ onBeforeUnmount(() => {
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: calc(100vh - 57px);
+  min-height: 100%;
   background: #000 !important;
 }
 
@@ -162,5 +179,15 @@ onBeforeUnmount(() => {
 
 .dos-player-shell :deep(.jsdos-rso .emulator-click-to-start-overlay) {
   background: rgb(0 0 0 / 0.65);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

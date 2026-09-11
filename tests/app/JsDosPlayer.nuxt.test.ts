@@ -3,12 +3,26 @@ import { indexedDB as fakeIndexedDb } from "fake-indexeddb";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { nextTick } from "vue";
 import JsDosPlayer from "../../app/components/JsDosPlayer.vue";
+import { clearSaveHashCache, uploadServerSave } from "../../app/composables/useJsDosPlayer";
 
 const bundleUrl = "/api/dos-games/lands-of-lore.jsdos";
 const jsDosScriptUrl = "https://v8.js-dos.com/latest/js-dos.js";
 const jsDosStyleUrl = "https://v8.js-dos.com/latest/js-dos.css";
 const saveDatabaseName = "js-dos-cache (emulators-ui-saves)";
 const saveStoreName = "files";
+
+interface MockFsChanges {
+  pull: (key: string) => Promise<Uint8Array | null>;
+  push: (key: string, bundle: Uint8Array) => Promise<void>;
+  urlToKey: (url: string) => string;
+  delete?: (key: string) => Promise<void>;
+}
+
+interface MockDosOptions {
+  kiosk?: boolean;
+  onEvent?: (event: string, arg?: unknown) => void;
+  fsChanges?: MockFsChanges;
+}
 
 const waitFor = async (assertion: () => void | Promise<void>, timeout = 1000) => {
   const startedAt = Date.now();
@@ -44,22 +58,34 @@ const cleanupJsDosAssets = () => {
   }
 };
 
-const mountPlayer = async () => {
+interface MountPlayerOptions {
+  persistResult?: Uint8Array | null;
+}
+
+const mountPlayer = async (options: MountPlayerOptions = {}) => {
   installLoadedJsDosScript();
 
-  const persistMock = vi.fn(async () => new Uint8Array([1, 2, 3]));
-  const saveMock = vi.fn(async () => true);
+  const persistMock = vi.fn(async () => options.persistResult ?? new Uint8Array([1, 2, 3]));
+  let capturedDosOptions: MockDosOptions | null = null;
+  const saveMock = vi.fn(async () => {
+    if (capturedDosOptions?.fsChanges?.push) {
+      const data = await persistMock();
+      if (data) {
+        await capturedDosOptions.fsChanges.push(bundleUrl, data);
+      }
+    }
+    return true;
+  });
   const stopMock = vi.fn(async () => undefined);
-  const dosMock = vi.fn(
-    (_element: HTMLDivElement, options: { onEvent?: (event: string, arg?: unknown) => void }) => {
-      options.onEvent?.("ci-ready", { persist: persistMock });
+  const dosMock = vi.fn((_element: HTMLDivElement, dosOpts: MockDosOptions) => {
+    capturedDosOptions = dosOpts;
+    dosOpts.onEvent?.("ci-ready", { persist: persistMock });
 
-      return {
-        save: saveMock,
-        stop: stopMock,
-      };
-    },
-  );
+    return {
+      save: saveMock,
+      stop: stopMock,
+    };
+  });
 
   Object.defineProperty(window, "indexedDB", {
     configurable: true,
@@ -82,6 +108,7 @@ const mountPlayer = async () => {
   await nextTick();
 
   return {
+    capturedDosOptions: () => capturedDosOptions,
     dosMock,
     persistMock,
     saveMock,
@@ -119,12 +146,33 @@ afterEach(() => {
 });
 
 describe("JsDosPlayer", () => {
-  it("starts js-dos with the provided bundle", async () => {
-    const { dosMock, wrapper } = await mountPlayer();
+  it("starts js-dos with the provided bundle and configures fsChanges", async () => {
+    const { capturedDosOptions, dosMock, wrapper } = await mountPlayer();
 
     expect(dosMock).toHaveBeenCalledTimes(1);
     expect(wrapper.attributes("aria-label")).toBeUndefined();
     expect(wrapper.text()).not.toContain("Connexion");
+
+    const opts = capturedDosOptions();
+    expect(opts?.kiosk).toBe(false);
+    expect(opts?.fsChanges).toBeDefined();
+    expect(typeof opts?.fsChanges?.pull).toBe("function");
+    expect(typeof opts?.fsChanges?.push).toBe("function");
+    expect(typeof opts?.fsChanges?.urlToKey).toBe("function");
+  });
+
+  it("persists save data through fsChanges.push and reads it with fsChanges.pull", async () => {
+    const { capturedDosOptions } = await mountPlayer();
+    const opts = capturedDosOptions();
+
+    const sampleSave = new Uint8Array([10, 20, 30, 40]);
+    await opts?.fsChanges?.push(bundleUrl, sampleSave);
+
+    const retrievedSave = await opts?.fsChanges?.pull(bundleUrl);
+    expect(retrievedSave).not.toBeNull();
+    if (retrievedSave) {
+      expect(Array.from(retrievedSave)).toEqual(Array.from(sampleSave));
+    }
   });
 
   it("stops the js-dos instance on unmount", async () => {
@@ -133,6 +181,18 @@ describe("JsDosPlayer", () => {
     wrapper.unmount();
 
     await waitFor(() => expect(stopMock).toHaveBeenCalledTimes(1));
+  });
+
+  it("triggers manual save through saveGameState and shows feedback", async () => {
+    const { saveMock, wrapper } = await mountPlayer();
+
+    const success = await (wrapper.vm as InstanceType<typeof JsDosPlayer>).saveGameState();
+
+    expect(success).toBe(true);
+    expect(saveMock).toHaveBeenCalledTimes(1);
+    expect((wrapper.vm as InstanceType<typeof JsDosPlayer>).saveSuccessMessage).toContain(
+      "synchronisée",
+    );
   });
 
   it("exports the js-dos save bundle through ci.persist", async () => {
@@ -183,5 +243,29 @@ describe("JsDosPlayer", () => {
 
     const storedSave = await readImportedSave(bundleUrl);
     expect(Array.from(storedSave)).toEqual(Array.from(importedBytes));
+  });
+
+  it("deduplicates cloud uploads when save content is unchanged", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(null, { status: 200 }));
+    clearSaveHashCache();
+
+    const saveBytes = new Uint8Array([1, 2, 3, 4, 5]);
+
+    const firstSuccess = await uploadServerSave("lands-of-lore", saveBytes);
+    expect(firstSuccess).toBe(true);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    // Un second appel avec le même contenu ne doit pas déclencher de fetch réseau
+    const secondSuccess = await uploadServerSave("lands-of-lore", saveBytes);
+    expect(secondSuccess).toBe(true);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    // Mais si le contenu change (nouvelle sauvegarde en jeu), on upload
+    const modifiedBytes = new Uint8Array([1, 2, 3, 4, 99]);
+    const thirdSuccess = await uploadServerSave("lands-of-lore", modifiedBytes);
+    expect(thirdSuccess).toBe(true);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
 });
