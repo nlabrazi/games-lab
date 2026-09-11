@@ -30,3 +30,8 @@ logs
 !/local/dos-games/.gitkeep
 /local/dos-saves
 /data/dos-saves
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
