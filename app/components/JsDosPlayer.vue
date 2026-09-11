@@ -7,6 +7,7 @@ const props = defineProps<{
 }>();
 
 const saveFileInput = ref<HTMLInputElement | null>(null);
+const showTip = ref(true);
 const {
   errorMessage,
   exportSaveFile,
@@ -63,7 +64,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="dos-player-shell relative h-full min-h-[calc(100vh-57px)] overflow-hidden bg-black">
+  <section class="dos-player-shell relative h-full w-full overflow-hidden bg-black">
     <input
       ref="saveFileInput"
       class="hidden"
@@ -73,14 +74,24 @@ onBeforeUnmount(() => {
 
     <div
       ref="playerElement"
-      class="dos-player h-full min-h-[calc(100vh-57px)] w-full"
+      class="dos-player h-full w-full"
       data-theme="dark"
       :aria-label="title" />
 
     <div
-      class="absolute bottom-4 left-4 z-10 max-w-md border border-neon-cyan/35 bg-black/70 px-3 py-2 text-[10px] text-neon-cyan backdrop-blur-sm">
-      Sauvegarde locale via js-dos. Exporte un fichier de backup pour ce bundle, puis importe-le dans ce
-      meme jeu.
+      v-if="showTip"
+      class="absolute bottom-3 left-3 z-10 max-w-xs sm:max-w-md border border-neon-cyan/35 bg-black/85 p-2 text-[9px] sm:text-[10px] text-neon-cyan backdrop-blur-sm rounded flex items-start justify-between gap-2 shadow-lg">
+      <span>
+        Sauvegarde locale via js-dos. Exporte un fichier de backup pour ce bundle, puis importe-le dans ce
+        meme jeu.
+      </span>
+      <button
+        type="button"
+        class="text-neon-cyan hover:text-white px-1 font-bold select-none cursor-pointer"
+        aria-label="Fermer le message"
+        @click="showTip = false">
+        ✕
+      </button>
     </div>
 
     <div
@@ -119,8 +130,8 @@ onBeforeUnmount(() => {
   --n: 220 22% 10%;
   --nc: 180 100% 86%;
   width: 100%;
-  min-height: calc(100vh - 57px);
   height: 100%;
+  min-height: 100%;
   background: #000 !important;
   color-scheme: dark;
 }
@@ -131,7 +142,7 @@ onBeforeUnmount(() => {
   position: relative;
   width: 100%;
   height: 100%;
-  min-height: calc(100vh - 57px);
+  min-height: 100%;
   background: #000 !important;
 }
 
