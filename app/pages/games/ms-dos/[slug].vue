@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import type JsDosPlayer from "~/components/JsDosPlayer.vue";
+import { computed } from "vue";
 import { findDosGame } from "~/data/dosGames";
 
 const route = useRoute();
@@ -32,16 +31,6 @@ const bundleUrl = computed(() =>
   joinUrl(String(config.public.dosGamesBaseUrl), game.value.bundleFile),
 );
 
-const playerRef = ref<InstanceType<typeof JsDosPlayer> | null>(null);
-
-const handleExportSave = async () => {
-  await playerRef.value?.exportSaveFile();
-};
-
-const handleImportSave = () => {
-  playerRef.value?.openSaveImportDialog();
-};
-
 useHead(() => ({
   title: `${game.value.title} - MS-DOS`,
 }));
@@ -49,26 +38,11 @@ useHead(() => ({
 
 <template>
   <GameShell :title="game.title">
-    <template #actions>
-      <button
-        class="btn-pixel px-2 py-1 text-[9px] sm:px-3 sm:py-1.5 sm:text-[10px]"
-        type="button"
-        :disabled="!playerRef?.isReady || playerRef?.isProcessingSaveFile"
-        @click="handleExportSave">
-        Export
-      </button>
-
-      <button
-        class="btn-pixel px-2 py-1 text-[9px] sm:px-3 sm:py-1.5 sm:text-[10px]"
-        type="button"
-        :disabled="!playerRef?.isReady || playerRef?.isProcessingSaveFile"
-        @click="handleImportSave">
-        Import
-      </button>
-    </template>
-
     <ClientOnly>
-      <JsDosPlayer ref="playerRef" :bundle-url="bundleUrl" :title="game.title" />
+      <JsDosPlayer
+        :bundle-url="bundleUrl"
+        :title="game.title"
+        :game-slug="gameSlug" />
 
       <template #fallback>
         <section class="flex h-full w-full items-center justify-center bg-black px-4 text-center">
