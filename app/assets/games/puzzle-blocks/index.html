@@ -205,25 +205,29 @@
       }
 
       #boardCanvas {
-        width: min(82vw, calc(50dvh - 94px));
-        height: auto;
-        max-height: calc(100dvh - 188px);
+        width: auto;
+        height: min(calc(100dvh - 160px), calc((100vw - 28px) * 2));
+        max-height: calc(100dvh - 160px);
+        max-width: calc(100vw - 28px);
+        aspect-ratio: 1 / 2;
       }
 
       .info-panel {
         position: fixed;
-        top: 8px;
-        left: 8px;
-        right: 8px;
+        top: max(6px, env(safe-area-inset-top));
+        left: max(8px, env(safe-area-inset-left));
+        right: max(8px, env(safe-area-inset-right));
         z-index: 4;
         min-width: 0;
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 6px;
-        padding: 6px;
+        padding: 6px 10px;
         border-radius: 16px;
-        background: rgba(1, 0, 8, 0.38);
+        background: rgba(1, 0, 8, 0.45);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(68, 255, 170, 0.25);
         pointer-events: none;
       }
 
@@ -243,7 +247,16 @@
         font-size: 0.82rem;
       }
 
-      #nextCanvas,
+      #nextCanvas {
+        width: 32px !important;
+        height: 32px !important;
+        display: block !important;
+        margin: 0 !important;
+        border-radius: 6px;
+        border: 1px solid rgba(51, 255, 204, 0.4);
+        background: rgba(0, 0, 0, 0.6);
+      }
+
       .controls,
       .highscore-badge {
         display: none !important;
@@ -302,6 +315,40 @@
 
       .mobile-control {
         pointer-events: auto;
+      }
+
+      @media (orientation: landscape) {
+        #boardCanvas {
+          height: calc(100dvh - 16px);
+          max-height: calc(100dvh - 16px);
+          width: auto;
+          aspect-ratio: 1 / 2;
+        }
+
+        .info-panel {
+          top: max(6px, env(safe-area-inset-top));
+          bottom: auto;
+          left: 50%;
+          right: auto;
+          transform: translateX(-50%);
+          width: auto;
+          background: rgba(1, 0, 8, 0.65);
+        }
+
+        .mobile-controls {
+          bottom: max(10px, env(safe-area-inset-bottom));
+          padding: 0 max(16px, env(safe-area-inset-left)) 0 max(16px, env(safe-area-inset-right));
+        }
+
+        .mobile-control {
+          width: 46px;
+          height: 46px;
+        }
+
+        .mobile-control.action {
+          width: 56px;
+          height: 56px;
+        }
       }
     }
   </style>
@@ -825,6 +872,9 @@
 
     function runMobileAction(action) {
       if (isPaused || !gameRunning) return;
+      if (navigator.vibrate) {
+        try { navigator.vibrate(action === 'drop' ? 14 : 6); } catch (_) {}
+      }
 
       if (action === 'left') moveHorizontal(-1);
       if (action === 'right') moveHorizontal(1);
