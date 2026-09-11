@@ -227,7 +227,12 @@ function setupMobileControls() {
     document.querySelectorAll('[data-mobile-move]').forEach((button) => {
         const direction = button.dataset.mobileMove;
         bindMobileRepeat(button, () => {
-            if (!combatActive && moves[direction]) movePlayer(...moves[direction]);
+            if (!combatActive && moves[direction]) {
+                if (navigator.vibrate) {
+                    try { navigator.vibrate(6); } catch (_) {}
+                }
+                movePlayer(...moves[direction]);
+            }
         });
     });
 
@@ -235,6 +240,9 @@ function setupMobileControls() {
         const action = button.dataset.mobileAction;
         bindMobileTap(button, () => {
             if (isPaused || !combatActive) return;
+            if (navigator.vibrate) {
+                try { navigator.vibrate(action === 'attack' ? 14 : 8); } catch (_) {}
+            }
             if (action === 'attack') playerAttack();
             if (action === 'flee') fleeFromCombat();
             drawGame();

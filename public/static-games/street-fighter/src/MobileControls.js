@@ -33,6 +33,11 @@ const bindVirtualButton = (button) => {
 		event.preventDefault();
 		button.setPointerCapture?.(event.pointerId);
 		button.classList.add('is-active');
+		if (navigator.vibrate) {
+			try {
+				navigator.vibrate(button.classList.contains('attack') ? 12 : 6);
+			} catch (_) {}
+		}
 		setVirtualControl(PLAYER_ONE, control, true);
 	});
 	button.addEventListener('pointerup', (event) => clearControl(button, control, event));
