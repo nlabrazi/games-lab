@@ -1,10 +1,10 @@
-*{
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-body{
+body {
   background: #000;
   overflow: hidden;
   touch-action: none;
@@ -18,11 +18,13 @@ html::-webkit-scrollbar {
 
 /* Hide scrollbar for IE, Edge and Firefox */
 html {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE and Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
-main{
+main {
   position: relative;
   height: 100vh;
   height: 100dvh;
@@ -30,7 +32,8 @@ main{
   display: grid;
   place-items: center;
 }
-canvas{
+
+canvas {
   display: block;
   width: 100%;
   max-height: 100%;
@@ -40,7 +43,7 @@ canvas{
   touch-action: none;
 }
 
-img{
+img {
   display: none;
 }
 
@@ -77,7 +80,8 @@ img{
   background: rgba(90, 56, 42, 0.64);
 }
 
-@media (hover: none), (pointer: coarse) {
+@media (hover: none),
+(pointer: coarse) {
   .mobile-fight-controls {
     position: fixed;
     left: 0;

@@ -173,7 +173,8 @@ button:active {
   }
 }
 
-@media (hover: none), (pointer: coarse) {
+@media (hover: none),
+(pointer: coarse) {
   body {
     padding: 0;
   }
@@ -241,7 +242,7 @@ button:active {
     display: none !important;
   }
 
-  .ui-panel > button {
+  .ui-panel>button {
     width: 40px;
     height: 40px;
     flex: 0 0 40px;

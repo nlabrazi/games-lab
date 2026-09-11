@@ -180,7 +180,8 @@
       }
     }
 
-    @media (hover: none), (pointer: coarse) {
+    @media (hover: none),
+    (pointer: coarse) {
       body {
         padding: 0;
       }
@@ -873,7 +874,7 @@
     function runMobileAction(action) {
       if (isPaused || !gameRunning) return;
       if (navigator.vibrate) {
-        try { navigator.vibrate(action === 'drop' ? 14 : 6); } catch (_) {}
+        try { navigator.vibrate(action === 'drop' ? 14 : 6); } catch (_) { }
       }
 
       if (action === 'left') moveHorizontal(-1);
