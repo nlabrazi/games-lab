@@ -268,4 +268,47 @@ describe("JsDosPlayer", () => {
     expect(thirdSuccess).toBe(true);
     expect(fetchSpy).toHaveBeenCalledTimes(2);
   });
+
+  it("renders DosTouchControls when forceTouchControls is enabled", async () => {
+    installLoadedJsDosScript();
+
+    let capturedDosOptions: MockDosOptions | null = null;
+    const dosMock = vi.fn((_element: HTMLDivElement, dosOpts: MockDosOptions) => {
+      capturedDosOptions = dosOpts;
+      dosOpts.onEvent?.("ci-ready", {});
+      dosOpts.onEvent?.("emu-ready");
+      return {
+        save: vi.fn(),
+        stop: vi.fn(),
+      };
+    });
+
+    Object.defineProperty(window, "Dos", {
+      configurable: true,
+      value: dosMock,
+    });
+
+    const wrapper = await mountSuspended(JsDosPlayer, {
+      props: {
+        bundleUrl,
+        title: "Lands of Lore: The Throne of Chaos",
+        forceTouchControls: true,
+      },
+    });
+
+    await waitFor(() => expect(dosMock).toHaveBeenCalled());
+    await nextTick();
+
+    // Vérifie que les contrôles tactiles sont bien présents
+    expect(wrapper.find('[data-control="forward"]').exists()).toBe(true);
+    expect(wrapper.find('[data-control="strafe-left"]').exists()).toBe(true);
+
+    // Vérifie l'état initial exposé
+    const vm = wrapper.vm as InstanceType<typeof JsDosPlayer>;
+    expect(vm.touchControlsVisible).toBe(true);
+
+    // Test du toggle
+    vm.toggleTouchControls();
+    expect(vm.touchControlsVisible).toBe(false);
+  });
 });

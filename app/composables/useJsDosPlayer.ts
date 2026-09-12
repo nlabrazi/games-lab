@@ -26,6 +26,12 @@ interface DosOptions {
 
 interface CommandInterface {
   persist?: (onlyChanges?: boolean) => Promise<Uint8Array>;
+  sendKeyEvent?: (keyCode: number, pressed: boolean) => void;
+  simulateKeyPress?: (...keyCodes: number[]) => void;
+  sendMouseMotion?: (x: number, y: number) => void;
+  sendMouseRelativeMotion?: (x: number, y: number) => void;
+  sendMouseButton?: (button: number, pressed: boolean) => void;
+  sendMouseSync?: () => void;
 }
 
 interface DosInstance {
@@ -248,9 +254,9 @@ export const storeJsDosSaveBundle = async (
   const bufferToStore =
     saveBundle instanceof Uint8Array
       ? saveBundle.buffer.slice(
-          saveBundle.byteOffset,
-          saveBundle.byteOffset + saveBundle.byteLength,
-        )
+        saveBundle.byteOffset,
+        saveBundle.byteOffset + saveBundle.byteLength,
+      )
       : saveBundle;
 
   await new Promise<void>((resolve, reject) => {
@@ -676,6 +682,7 @@ export const useJsDosPlayer = ({ getBundleUrl, gameSlug, kiosk }: UseJsDosPlayer
   return {
     errorMessage,
     exportSaveFile,
+    getCommandInterface: () => commandInterface,
     importSaveFile,
     isPlayerReady,
     isProcessingSaveFile,
