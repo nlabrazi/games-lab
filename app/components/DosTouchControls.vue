@@ -50,19 +50,73 @@ const dpadControls: ControlConfig[] = [
   // Ligne 1 : Pivoter Gauche, Avancer, Pivoter Droite
   { id: "turn-left", label: "↰", sublabel: "G", keyCode: 37, key: "ArrowLeft", code: "ArrowLeft" },
   { id: "forward", label: "▲", sublabel: "Avancer", keyCode: 38, key: "ArrowUp", code: "ArrowUp" },
-  { id: "turn-right", label: "↱", sublabel: "D", keyCode: 39, key: "ArrowRight", code: "ArrowRight" },
+  {
+    id: "turn-right",
+    label: "↱",
+    sublabel: "D",
+    keyCode: 39,
+    key: "ArrowRight",
+    code: "ArrowRight",
+  },
   // Ligne 2 : Pas chassé G (Strafe L), Reculer, Pas chassé D (Strafe R)
   { id: "strafe-left", label: "⇇", sublabel: "Pas G", keyCode: 100, key: "4", code: "Numpad4" },
-  { id: "backward", label: "▼", sublabel: "Reculer", keyCode: 40, key: "ArrowDown", code: "ArrowDown" },
+  {
+    id: "backward",
+    label: "▼",
+    sublabel: "Reculer",
+    keyCode: 40,
+    key: "ArrowDown",
+    code: "ArrowDown",
+  },
   { id: "strafe-right", label: "⇉", sublabel: "Pas D", keyCode: 102, key: "6", code: "Numpad6" },
 ];
 
 const actionControls: ControlConfig[] = [
-  { id: "action-attack", label: "ATTAQUE", sublabel: "Espace", keyCode: 32, key: " ", code: "Space", color: "magenta" },
-  { id: "action-enter", label: "ENTRÉE", sublabel: "Valider", keyCode: 13, key: "Enter", code: "Enter", color: "cyan" },
-  { id: "action-map", label: "CARTE", sublabel: "Tab", keyCode: 9, key: "Tab", code: "Tab", color: "yellow" },
-  { id: "action-rest", label: "REPOS", sublabel: "R", keyCode: 82, key: "r", code: "KeyR", color: "green" },
-  { id: "action-esc", label: "MENU", sublabel: "Échap", keyCode: 27, key: "Escape", code: "Escape", color: "cyan" },
+  {
+    id: "action-attack",
+    label: "ATTAQUE",
+    sublabel: "Espace",
+    keyCode: 32,
+    key: " ",
+    code: "Space",
+    color: "magenta",
+  },
+  {
+    id: "action-enter",
+    label: "ENTRÉE",
+    sublabel: "Valider",
+    keyCode: 13,
+    key: "Enter",
+    code: "Enter",
+    color: "cyan",
+  },
+  {
+    id: "action-map",
+    label: "CARTE",
+    sublabel: "Tab",
+    keyCode: 9,
+    key: "Tab",
+    code: "Tab",
+    color: "yellow",
+  },
+  {
+    id: "action-rest",
+    label: "REPOS",
+    sublabel: "R",
+    keyCode: 82,
+    key: "r",
+    code: "KeyR",
+    color: "green",
+  },
+  {
+    id: "action-esc",
+    label: "MENU",
+    sublabel: "Échap",
+    keyCode: 27,
+    key: "Escape",
+    code: "Escape",
+    color: "cyan",
+  },
 ];
 
 const triggerHaptic = (duration = 10) => {
