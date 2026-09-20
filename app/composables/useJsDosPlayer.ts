@@ -254,9 +254,9 @@ export const storeJsDosSaveBundle = async (
   const bufferToStore =
     saveBundle instanceof Uint8Array
       ? saveBundle.buffer.slice(
-        saveBundle.byteOffset,
-        saveBundle.byteOffset + saveBundle.byteLength,
-      )
+          saveBundle.byteOffset,
+          saveBundle.byteOffset + saveBundle.byteLength,
+        )
       : saveBundle;
 
   await new Promise<void>((resolve, reject) => {
