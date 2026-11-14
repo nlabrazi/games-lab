@@ -1,46 +1,46 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { findDosGame } from "~/data/dosGames";
+import { computed, ref } from 'vue'
+import { findDosGame } from '~/data/dosGames'
 
-const route = useRoute();
-const config = useRuntimeConfig();
+const route = useRoute()
+const config = useRuntimeConfig()
 
 const gameSlug = computed(() => {
-  const routeSlug = route.params.slug;
-  return typeof routeSlug === "string" ? routeSlug : "";
-});
+  const routeSlug = route.params.slug
+  return typeof routeSlug === 'string' ? routeSlug : ''
+})
 
-const game = computed(() => findDosGame(gameSlug.value));
+const game = computed(() => findDosGame(gameSlug.value))
 
-if (!game.value || game.value.status !== "available") {
+if (!game.value || game.value.status !== 'available') {
   throw createError({
     statusCode: 404,
-    statusMessage: "Jeu MS-DOS introuvable",
-  });
+    statusMessage: 'Jeu MS-DOS introuvable',
+  })
 }
 
 const joinUrl = (baseUrl: string, fileName: string) => {
   if (/^https?:\/\//.test(baseUrl)) {
-    return new URL(fileName, `${baseUrl.replace(/\/+$/, "")}/`).toString();
+    return new URL(fileName, `${baseUrl.replace(/\/+$/, '')}/`).toString()
   }
 
-  return `${baseUrl.replace(/\/+$/, "")}/${fileName.replace(/^\/+/, "")}`;
-};
+  return `${baseUrl.replace(/\/+$/, '')}/${fileName.replace(/^\/+/, '')}`
+}
 
 const bundleUrl = computed(() =>
   joinUrl(String(config.public.dosGamesBaseUrl), game.value.bundleFile),
-);
+)
 
-const forceTouchControls = ref<boolean | undefined>(undefined);
+const forceTouchControls = ref<boolean | undefined>(undefined)
 
 const toggleTouchControls = () => {
   forceTouchControls.value =
-    forceTouchControls.value === undefined ? true : !forceTouchControls.value;
-};
+    forceTouchControls.value === undefined ? true : !forceTouchControls.value
+}
 
 useHead(() => ({
   title: `${game.value.title} - MS-DOS`,
-}));
+}))
 </script>
 
 <template>

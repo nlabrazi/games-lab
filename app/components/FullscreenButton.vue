@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { useFullscreen } from "~/composables/useFullscreen";
+import { useFullscreen } from '~/composables/useFullscreen'
 
 const props = withDefaults(
   defineProps<{
-    compact?: boolean;
+    compact?: boolean
   }>(),
   {
     compact: false,
   },
-);
+)
 
-const { isFullscreen, isSupported, toggleFullscreen } = useFullscreen();
+const { isFullscreen, isSupported, toggleFullscreen } = useFullscreen()
 </script>
 
 <template>

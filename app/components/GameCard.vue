@@ -16,13 +16,13 @@
 </template>
 
 <script setup lang="ts">
-import type { Game } from "@/data/games";
+import type { Game } from '@/data/games'
 
 defineProps<{
-  game: Game;
-}>();
+  game: Game
+}>()
 
 defineEmits<{
-  select: [game: Game];
-}>();
+  select: [game: Game]
+}>()
 </script>

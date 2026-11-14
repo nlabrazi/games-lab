@@ -55,22 +55,22 @@
 /*
   Initialise les jeux depuis le composable.
 */
-import { useGames } from "~/composables/useGames";
-import type { Game } from "~/data/games";
+import { useGames } from '~/composables/useGames'
+import type { Game } from '~/data/games'
 
-const { selectedGame, selectGame, clearSelection } = useGames();
+const { selectedGame, selectGame, clearSelection } = useGames()
 
 const handleGameSelect = (game?: Game) => {
   if (!game) {
-    clearSelection();
-    return;
+    clearSelection()
+    return
   }
 
-  if (game.link !== "#") {
-    clearSelection();
-    return navigateTo(game.link);
+  if (game.link !== '#') {
+    clearSelection()
+    return navigateTo(game.link)
   }
 
-  selectGame(game);
-};
+  selectGame(game)
+}
 </script>

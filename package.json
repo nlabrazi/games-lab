@@ -1,5 +1,6 @@
 {
   "name": "games-lab",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -7,39 +8,36 @@
     "build": "nuxt build",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "check": "biome check .",
+    "check:write": "biome check --write .",
+    "format": "biome format --write .",
+    "lint": "biome lint .",
+    "typecheck": "nuxt typecheck",
     "pretest": "nuxt prepare",
     "test": "vitest run",
     "pretest:watch": "nuxt prepare",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:all": "vitest run && playwright test",
-    "lint": "biome check .",
-    "format": "biome format . --write"
+    "test:all": "vitest run && playwright test"
   },
   "dependencies": {
     "nuxt": "4.4.2",
     "vue": "3.5.33"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
+    "@nlabrazi/config-biome": "^0.2.0",
+    "@nlabrazi/config-playwright": "^0.1.0",
+    "@nlabrazi/config-vitest": "^0.1.0",
+    "@nlabrazi/tsconfig": "^0.1.0",
     "@nuxt/test-utils": "^4.0.3",
     "@nuxtjs/tailwindcss": "^6.14.0",
-    "@playwright/test": "^1.63.0",
-    "@vue/test-utils": "^2.4.10",
-    "fake-indexeddb": "^6.2.5",
-    "happy-dom": "^20.9.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.7"
+    "fake-indexeddb": "^6.2.5"
   },
-  "version": "1.0.0",
-  "description": "<a name=\"readme-top\"></a>",
-  "main": "index.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nlabrazi/games-lab.git"
   },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/nlabrazi/games-lab/issues"

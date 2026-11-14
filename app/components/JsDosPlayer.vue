@@ -1,25 +1,25 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import DosTouchControls from "./DosTouchControls.vue";
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import DosTouchControls from './DosTouchControls.vue'
 
 const props = withDefaults(
   defineProps<{
-    bundleUrl: string;
-    title: string;
-    gameSlug?: string;
-    forceTouchControls?: boolean;
+    bundleUrl: string
+    title: string
+    gameSlug?: string
+    forceTouchControls?: boolean
   }>(),
   {
     forceTouchControls: undefined,
   },
-);
+)
 
-const emit = defineEmits<(e: "update:touchControlsVisible", value: boolean) => void>();
+const emit = defineEmits<(e: 'update:touchControlsVisible', value: boolean) => void>()
 
-const saveFileInput = ref<HTMLInputElement | null>(null);
-const isTouchDevice = ref(false);
-const touchControlsVisible = ref(true);
-const isRightClickArmed = ref(false);
+const saveFileInput = ref<HTMLInputElement | null>(null)
+const isTouchDevice = ref(false)
+const touchControlsVisible = ref(true)
+const isRightClickArmed = ref(false)
 
 const {
   errorMessage,
@@ -37,70 +37,70 @@ const {
   stopPlayer,
 } = useJsDosPlayer({
   getBundleUrl: () => props.bundleUrl,
-  gameSlug: () => props.gameSlug || "",
-});
+  gameSlug: () => props.gameSlug || '',
+})
 
 const shouldShowTouchControls = computed(() => {
   if (props.forceTouchControls !== undefined) {
-    return props.forceTouchControls;
+    return props.forceTouchControls
   }
-  return isTouchDevice.value;
-});
+  return isTouchDevice.value
+})
 
 // Sécurisation des clics tactiles sur le canvas DOS
-const MIN_CLICK_HOLD_MS = 75;
-let pointerDownTime = 0;
-let isSyntheticEvent = false;
+const MIN_CLICK_HOLD_MS = 75
+let pointerDownTime = 0
+let isSyntheticEvent = false
 
 const isCanvasTarget = (target: EventTarget | null): boolean => {
-  if (!(target instanceof HTMLElement)) return false;
-  return target.tagName === "CANVAS" || target.classList.contains("emulator-canvas");
-};
+  if (!(target instanceof HTMLElement)) return false
+  return target.tagName === 'CANVAS' || target.classList.contains('emulator-canvas')
+}
 
 const handleCapturePointerDown = (event: PointerEvent) => {
-  if (isSyntheticEvent || !isCanvasTarget(event.target)) return;
+  if (isSyntheticEvent || !isCanvasTarget(event.target)) return
 
-  pointerDownTime = performance.now();
+  pointerDownTime = performance.now()
 
   if (isRightClickArmed.value) {
-    const ci = getCommandInterface();
+    const ci = getCommandInterface()
     if (ci?.sendMouseButton && ci?.sendMouseMotion) {
-      event.stopPropagation();
-      event.preventDefault();
+      event.stopPropagation()
+      event.preventDefault()
 
-      const canvas = event.target as HTMLElement;
-      const rect = canvas.getBoundingClientRect();
-      const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
-      const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
+      const canvas = event.target as HTMLElement
+      const rect = canvas.getBoundingClientRect()
+      const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width))
+      const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height))
 
-      ci.sendMouseMotion(x, y);
-      ci.sendMouseButton(1, true);
+      ci.sendMouseMotion(x, y)
+      ci.sendMouseButton(1, true)
 
       setTimeout(() => {
-        ci.sendMouseButton?.(1, false);
-        isRightClickArmed.value = false;
-      }, MIN_CLICK_HOLD_MS);
+        ci.sendMouseButton?.(1, false)
+        isRightClickArmed.value = false
+      }, MIN_CLICK_HOLD_MS)
     }
   }
-};
+}
 
 const handleCapturePointerUp = (event: PointerEvent) => {
-  if (isSyntheticEvent || !isCanvasTarget(event.target)) return;
+  if (isSyntheticEvent || !isCanvasTarget(event.target)) return
 
   if (isRightClickArmed.value) {
-    event.stopPropagation();
-    event.preventDefault();
-    return;
+    event.stopPropagation()
+    event.preventDefault()
+    return
   }
 
-  const elapsed = performance.now() - pointerDownTime;
+  const elapsed = performance.now() - pointerDownTime
   if (elapsed < MIN_CLICK_HOLD_MS) {
     // Le tap a été trop bref pour le polling INT 33h de DOS :
     // On temporise pour s'assurer que le bouton reste appuyé au moins MIN_CLICK_HOLD_MS
-    event.stopImmediatePropagation();
-    event.preventDefault();
+    event.stopImmediatePropagation()
+    event.preventDefault()
 
-    const canvas = event.target as HTMLElement;
+    const canvas = event.target as HTMLElement
     const eventProps = {
       bubbles: true,
       cancelable: true,
@@ -112,67 +112,67 @@ const handleCapturePointerUp = (event: PointerEvent) => {
       buttons: event.buttons,
       pointerId: event.pointerId,
       pointerType: event.pointerType,
-    };
+    }
 
     setTimeout(() => {
-      isSyntheticEvent = true;
+      isSyntheticEvent = true
       try {
-        const syntheticUp = new PointerEvent("pointerup", eventProps);
-        canvas.dispatchEvent(syntheticUp);
+        const syntheticUp = new PointerEvent('pointerup', eventProps)
+        canvas.dispatchEvent(syntheticUp)
       } finally {
-        isSyntheticEvent = false;
+        isSyntheticEvent = false
       }
-    }, MIN_CLICK_HOLD_MS - elapsed);
+    }, MIN_CLICK_HOLD_MS - elapsed)
   }
-};
+}
 
 const attachCanvasStabilizers = () => {
-  const el = playerElement.value;
-  if (!el) return;
-  el.addEventListener("pointerdown", handleCapturePointerDown, { capture: true });
-  el.addEventListener("pointerup", handleCapturePointerUp, { capture: true });
-};
+  const el = playerElement.value
+  if (!el) return
+  el.addEventListener('pointerdown', handleCapturePointerDown, { capture: true })
+  el.addEventListener('pointerup', handleCapturePointerUp, { capture: true })
+}
 
 const detachCanvasStabilizers = () => {
-  const el = playerElement.value;
-  if (!el) return;
-  el.removeEventListener("pointerdown", handleCapturePointerDown, { capture: true });
-  el.removeEventListener("pointerup", handleCapturePointerUp, { capture: true });
-};
+  const el = playerElement.value
+  if (!el) return
+  el.removeEventListener('pointerdown', handleCapturePointerDown, { capture: true })
+  el.removeEventListener('pointerup', handleCapturePointerUp, { capture: true })
+}
 
 const handleExportSave = async () => {
-  await exportSaveFile();
-};
+  await exportSaveFile()
+}
 
 const handleManualSave = async () => {
-  await saveGameState();
-};
+  await saveGameState()
+}
 
 const openSaveImportDialog = () => {
-  saveFileInput.value?.click();
-};
+  saveFileInput.value?.click()
+}
 
 const handleSaveImport = async (event: Event) => {
-  const input = event.target;
+  const input = event.target
 
   if (!(input instanceof HTMLInputElement)) {
-    return;
+    return
   }
 
-  const [file] = Array.from(input.files || []);
-  input.value = "";
+  const [file] = Array.from(input.files || [])
+  input.value = ''
 
   if (!file) {
-    return;
+    return
   }
 
-  await importSaveFile(file);
-};
+  await importSaveFile(file)
+}
 
 const toggleTouchControls = () => {
-  touchControlsVisible.value = !touchControlsVisible.value;
-  emit("update:touchControlsVisible", touchControlsVisible.value);
-};
+  touchControlsVisible.value = !touchControlsVisible.value
+  emit('update:touchControlsVisible', touchControlsVisible.value)
+}
 
 defineExpose({
   exportSaveFile: handleExportSave,
@@ -187,24 +187,24 @@ defineExpose({
   saveSuccessMessage,
   toggleTouchControls,
   touchControlsVisible,
-});
+})
 
 onMounted(() => {
-  if (typeof window !== "undefined") {
+  if (typeof window !== 'undefined') {
     isTouchDevice.value =
-      "ontouchstart" in window ||
+      'ontouchstart' in window ||
       navigator.maxTouchPoints > 0 ||
-      window.matchMedia?.("(pointer: coarse)").matches ||
-      false;
+      window.matchMedia?.('(pointer: coarse)').matches ||
+      false
   }
-  attachCanvasStabilizers();
-  void startPlayer();
-});
+  attachCanvasStabilizers()
+  void startPlayer()
+})
 
 onBeforeUnmount(() => {
-  detachCanvasStabilizers();
-  stopPlayer();
-});
+  detachCanvasStabilizers()
+  stopPlayer()
+})
 </script>
 
 <template>

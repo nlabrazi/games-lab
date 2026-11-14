@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import gameHtml from "~/assets/games/pixel-invaders/index.html?raw";
+import gameHtml from '~/assets/games/pixel-invaders/index.html?raw'
 </script>
 
 <template>

@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { type DosGame, dosGames } from "~/data/dosGames";
+import { type DosGame, dosGames } from '~/data/dosGames'
 
-const route = useRoute();
-const queryGame = route.query.game;
+const route = useRoute()
+const queryGame = route.query.game
 
-if (typeof queryGame === "string") {
-  await navigateTo(`/games/ms-dos/${queryGame}`, { replace: true });
+if (typeof queryGame === 'string') {
+  await navigateTo(`/games/ms-dos/${queryGame}`, { replace: true })
 }
 
-const getGameRoute = (game: DosGame) => `/games/ms-dos/${game.slug}`;
+const getGameRoute = (game: DosGame) => `/games/ms-dos/${game.slug}`
 
 useHead({
-  title: "Catalogue MS-DOS",
-});
+  title: 'Catalogue MS-DOS',
+})
 </script>
 
 <template>
