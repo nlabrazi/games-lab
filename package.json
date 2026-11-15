@@ -22,17 +22,17 @@
     "test:all": "vitest run && playwright test"
   },
   "dependencies": {
-    "nuxt": "4.4.2",
-    "vue": "3.5.33"
+    "nuxt": "^4.6.4",
+    "vue": "^3.5.45"
   },
   "devDependencies": {
     "@nlabrazi/config-biome": "^0.2.0",
     "@nlabrazi/config-playwright": "^0.1.0",
     "@nlabrazi/config-vitest": "^0.1.0",
     "@nlabrazi/tsconfig": "^0.1.0",
-    "@nuxt/test-utils": "^4.0.3",
+    "@nuxt/test-utils": "^4.4.0",
     "@nuxtjs/tailwindcss": "^6.14.0",
-    "fake-indexeddb": "^6.2.5"
+    "fake-indexeddb": "^6.2.8"
   },
   "repository": {
     "type": "git",
