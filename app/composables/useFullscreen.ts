@@ -1,59 +1,59 @@
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 export interface UseFullscreenOptions {
-  target?: () => HTMLElement | null | undefined;
+  target?: () => HTMLElement | null | undefined
 }
 
 export function useFullscreen(options: UseFullscreenOptions = {}) {
-  const isFullscreen = ref(false);
-  const isSupported = ref(false);
+  const isFullscreen = ref(false)
+  const isSupported = ref(false)
 
-  const getDoc = () => (typeof document !== "undefined" ? document : null);
+  const getDoc = () => (typeof document !== 'undefined' ? document : null)
 
   const getTargetElement = (): HTMLElement | null => {
     if (options.target) {
-      const custom = options.target();
-      if (custom) return custom;
+      const custom = options.target()
+      if (custom) return custom
     }
-    const doc = getDoc();
-    return doc?.documentElement ?? null;
-  };
+    const doc = getDoc()
+    return doc?.documentElement ?? null
+  }
 
   const updateState = () => {
     const doc = getDoc() as
       | (Document & {
-          webkitFullscreenElement?: Element | null;
-          mozFullScreenElement?: Element | null;
-          msFullscreenElement?: Element | null;
+          webkitFullscreenElement?: Element | null
+          mozFullScreenElement?: Element | null
+          msFullscreenElement?: Element | null
         })
-      | null;
+      | null
 
     if (!doc) {
-      isFullscreen.value = false;
-      return;
+      isFullscreen.value = false
+      return
     }
 
     const current =
       doc.fullscreenElement ||
       doc.webkitFullscreenElement ||
       doc.mozFullScreenElement ||
-      doc.msFullscreenElement;
+      doc.msFullscreenElement
 
-    isFullscreen.value = Boolean(current);
-  };
+    isFullscreen.value = Boolean(current)
+  }
 
   const checkSupport = () => {
     const doc = getDoc() as
       | (Document & {
-          webkitFullscreenEnabled?: boolean;
-          mozFullScreenEnabled?: boolean;
-          msFullscreenEnabled?: boolean;
+          webkitFullscreenEnabled?: boolean
+          mozFullScreenEnabled?: boolean
+          msFullscreenEnabled?: boolean
         })
-      | null;
+      | null
 
     if (!doc) {
-      isSupported.value = false;
-      return;
+      isSupported.value = false
+      return
     }
 
     isSupported.value = Boolean(
@@ -64,99 +64,99 @@ export function useFullscreen(options: UseFullscreenOptions = {}) {
         // Certains navigateurs mobiles ont requestFullscreen sur documentElement même si fullscreenEnabled n'est pas explicite
         Boolean(
           doc.documentElement &&
-            ("requestFullscreen" in doc.documentElement ||
-              "webkitRequestFullscreen" in doc.documentElement),
+            ('requestFullscreen' in doc.documentElement ||
+              'webkitRequestFullscreen' in doc.documentElement),
         ),
-    );
-  };
+    )
+  }
 
   const enterFullscreen = async () => {
     const target = getTargetElement() as
       | (HTMLElement & {
-          webkitRequestFullscreen?: () => Promise<void> | void;
-          mozRequestFullScreen?: () => Promise<void> | void;
-          msRequestFullscreen?: () => Promise<void> | void;
+          webkitRequestFullscreen?: () => Promise<void> | void
+          mozRequestFullScreen?: () => Promise<void> | void
+          msRequestFullscreen?: () => Promise<void> | void
         })
-      | null;
+      | null
 
-    if (!target) return;
+    if (!target) return
 
     try {
-      if (typeof target.requestFullscreen === "function") {
-        await target.requestFullscreen();
-      } else if (typeof target.webkitRequestFullscreen === "function") {
-        await target.webkitRequestFullscreen();
-      } else if (typeof target.mozRequestFullScreen === "function") {
-        await target.mozRequestFullScreen();
-      } else if (typeof target.msRequestFullscreen === "function") {
-        await target.msRequestFullscreen();
+      if (typeof target.requestFullscreen === 'function') {
+        await target.requestFullscreen()
+      } else if (typeof target.webkitRequestFullscreen === 'function') {
+        await target.webkitRequestFullscreen()
+      } else if (typeof target.mozRequestFullScreen === 'function') {
+        await target.mozRequestFullScreen()
+      } else if (typeof target.msRequestFullscreen === 'function') {
+        await target.msRequestFullscreen()
       }
     } catch (err) {
-      console.warn("Impossible d'activer le plein écran :", err);
+      console.warn("Impossible d'activer le plein écran :", err)
     } finally {
-      updateState();
+      updateState()
     }
-  };
+  }
 
   const exitFullscreen = async () => {
     const doc = getDoc() as
       | (Document & {
-          webkitExitFullscreen?: () => Promise<void> | void;
-          mozCancelFullScreen?: () => Promise<void> | void;
-          msExitFullscreen?: () => Promise<void> | void;
+          webkitExitFullscreen?: () => Promise<void> | void
+          mozCancelFullScreen?: () => Promise<void> | void
+          msExitFullscreen?: () => Promise<void> | void
         })
-      | null;
+      | null
 
-    if (!doc) return;
+    if (!doc) return
 
     try {
-      if (typeof doc.exitFullscreen === "function") {
-        await doc.exitFullscreen();
-      } else if (typeof doc.webkitExitFullscreen === "function") {
-        await doc.webkitExitFullscreen();
-      } else if (typeof doc.mozCancelFullScreen === "function") {
-        await doc.mozCancelFullScreen();
-      } else if (typeof doc.msExitFullscreen === "function") {
-        await doc.msExitFullscreen();
+      if (typeof doc.exitFullscreen === 'function') {
+        await doc.exitFullscreen()
+      } else if (typeof doc.webkitExitFullscreen === 'function') {
+        await doc.webkitExitFullscreen()
+      } else if (typeof doc.mozCancelFullScreen === 'function') {
+        await doc.mozCancelFullScreen()
+      } else if (typeof doc.msExitFullscreen === 'function') {
+        await doc.msExitFullscreen()
       }
     } catch (err) {
-      console.warn("Impossible de quitter le plein écran :", err);
+      console.warn('Impossible de quitter le plein écran :', err)
     } finally {
-      updateState();
+      updateState()
     }
-  };
+  }
 
   const toggleFullscreen = async () => {
     if (isFullscreen.value) {
-      await exitFullscreen();
+      await exitFullscreen()
     } else {
-      await enterFullscreen();
+      await enterFullscreen()
     }
-  };
+  }
 
-  if (typeof window !== "undefined") {
+  if (typeof window !== 'undefined') {
     onMounted(() => {
-      checkSupport();
-      updateState();
+      checkSupport()
+      updateState()
 
-      const doc = getDoc();
-      if (!doc) return;
+      const doc = getDoc()
+      if (!doc) return
 
-      doc.addEventListener("fullscreenchange", updateState);
-      doc.addEventListener("webkitfullscreenchange", updateState);
-      doc.addEventListener("mozfullscreenchange", updateState);
-      doc.addEventListener("MSFullscreenChange", updateState);
-    });
+      doc.addEventListener('fullscreenchange', updateState)
+      doc.addEventListener('webkitfullscreenchange', updateState)
+      doc.addEventListener('mozfullscreenchange', updateState)
+      doc.addEventListener('MSFullscreenChange', updateState)
+    })
 
     onUnmounted(() => {
-      const doc = getDoc();
-      if (!doc) return;
+      const doc = getDoc()
+      if (!doc) return
 
-      doc.removeEventListener("fullscreenchange", updateState);
-      doc.removeEventListener("webkitfullscreenchange", updateState);
-      doc.removeEventListener("mozfullscreenchange", updateState);
-      doc.removeEventListener("MSFullscreenChange", updateState);
-    });
+      doc.removeEventListener('fullscreenchange', updateState)
+      doc.removeEventListener('webkitfullscreenchange', updateState)
+      doc.removeEventListener('mozfullscreenchange', updateState)
+      doc.removeEventListener('MSFullscreenChange', updateState)
+    })
   }
 
   return {
@@ -165,5 +165,5 @@ export function useFullscreen(options: UseFullscreenOptions = {}) {
     enterFullscreen,
     exitFullscreen,
     toggleFullscreen,
-  };
+  }
 }

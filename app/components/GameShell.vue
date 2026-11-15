@@ -1,13 +1,13 @@
 <script setup lang="ts">
 withDefaults(
   defineProps<{
-    title: string;
-    backTo?: string;
+    title: string
+    backTo?: string
   }>(),
   {
-    backTo: "/",
+    backTo: '/',
   },
-);
+)
 </script>
 
 <template>

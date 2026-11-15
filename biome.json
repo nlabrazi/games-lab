@@ -1,21 +1,6 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "extends": ["@nlabrazi/config-biome/configs/recommended"],
   "files": {
-    "ignore": [".nuxt", ".output", "app/assets/games", "public/static-games"]
-  },
-  "organizeImports": {
-    "enabled": true
-  },
-  "linter": {
-    "enabled": true,
-    "rules": {
-      "recommended": true
-    }
-  },
-  "formatter": {
-    "enabled": true,
-    "indentStyle": "space",
-    "indentWidth": 2,
-    "lineWidth": 100
+    "includes": ["!**/*.css", "!**/app/assets/games", "!**/public/static-games"]
   }
 }

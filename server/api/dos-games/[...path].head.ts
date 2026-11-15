@@ -1,8 +1,8 @@
-import { resolveDosGameBundle, setDosGameBundleHeaders } from "../../utils/dos-game-bundles";
+import { resolveDosGameBundle, setDosGameBundleHeaders } from '../../utils/dos-game-bundles'
 
 export default defineEventHandler(async (event) => {
-  const { size } = await resolveDosGameBundle(event);
-  setDosGameBundleHeaders(event, size);
+  const { size } = await resolveDosGameBundle(event)
+  setDosGameBundleHeaders(event, size)
 
-  return "";
-});
+  return ''
+})

@@ -8,10 +8,10 @@
 </template>
 
 <script setup lang="ts">
-import type { Game } from "@/data/games";
-import { games } from "@/data/games";
+import type { Game } from '@/data/games'
+import { games } from '@/data/games'
 
 defineEmits<{
-  select: [game: Game];
-}>();
+  select: [game: Game]
+}>()
 </script>

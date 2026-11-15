@@ -15,13 +15,13 @@
 </template>
 
 <script setup lang="ts">
-import type { Game } from "@/data/games";
+import type { Game } from '@/data/games'
 
 defineProps<{
-  selectedGame?: Game | null;
-}>();
+  selectedGame?: Game | null
+}>()
 
 defineEmits<{
-  back: [];
-}>();
+  back: []
+}>()
 </script>

@@ -1,141 +1,141 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 const props = withDefaults(
   defineProps<{
-    modelValue?: boolean;
-    rightClickActive?: boolean;
+    modelValue?: boolean
+    rightClickActive?: boolean
   }>(),
   {
     modelValue: true,
     rightClickActive: false,
   },
-);
+)
 
 const emit = defineEmits<{
-  (e: "update:modelValue", value: boolean): void;
-  (e: "update:rightClickActive", value: boolean): void;
-  (e: "sendKey", keyCode: number, pressed: boolean): void;
-}>();
+  (e: 'update:modelValue', value: boolean): void
+  (e: 'update:rightClickActive', value: boolean): void
+  (e: 'sendKey', keyCode: number, pressed: boolean): void
+}>()
 
 const isVisible = computed({
   get: () => props.modelValue,
-  set: (val: boolean) => emit("update:modelValue", val),
-});
+  set: (val: boolean) => emit('update:modelValue', val),
+})
 
 const isRightClick = computed({
   get: () => props.rightClickActive,
-  set: (val: boolean) => emit("update:rightClickActive", val),
-});
+  set: (val: boolean) => emit('update:rightClickActive', val),
+})
 
 // Suivi des boutons actifs pour l'affichage visuel et la garantie du temps d'appui
-const activeKeys = ref<Set<string>>(new Set());
-const pressStartTimes = new Map<string, number>();
-const releaseTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+const activeKeys = ref<Set<string>>(new Set())
+const pressStartTimes = new Map<string, number>()
+const releaseTimeouts = new Map<string, ReturnType<typeof setTimeout>>()
 
-const MIN_HOLD_DURATION_MS = 80;
+const MIN_HOLD_DURATION_MS = 80
 
 interface ControlConfig {
-  id: string;
-  label: string;
-  sublabel?: string;
-  icon?: string;
-  keyCode: number;
-  key: string;
-  code: string;
-  color?: "cyan" | "magenta" | "yellow" | "green";
+  id: string
+  label: string
+  sublabel?: string
+  icon?: string
+  keyCode: number
+  key: string
+  code: string
+  color?: 'cyan' | 'magenta' | 'yellow' | 'green'
 }
 
 const dpadControls: ControlConfig[] = [
   // Ligne 1 : Pivoter Gauche, Avancer, Pivoter Droite
-  { id: "turn-left", label: "↰", sublabel: "G", keyCode: 37, key: "ArrowLeft", code: "ArrowLeft" },
-  { id: "forward", label: "▲", sublabel: "Avancer", keyCode: 38, key: "ArrowUp", code: "ArrowUp" },
+  { id: 'turn-left', label: '↰', sublabel: 'G', keyCode: 37, key: 'ArrowLeft', code: 'ArrowLeft' },
+  { id: 'forward', label: '▲', sublabel: 'Avancer', keyCode: 38, key: 'ArrowUp', code: 'ArrowUp' },
   {
-    id: "turn-right",
-    label: "↱",
-    sublabel: "D",
+    id: 'turn-right',
+    label: '↱',
+    sublabel: 'D',
     keyCode: 39,
-    key: "ArrowRight",
-    code: "ArrowRight",
+    key: 'ArrowRight',
+    code: 'ArrowRight',
   },
   // Ligne 2 : Pas chassé G (Strafe L), Reculer, Pas chassé D (Strafe R)
-  { id: "strafe-left", label: "⇇", sublabel: "Pas G", keyCode: 100, key: "4", code: "Numpad4" },
+  { id: 'strafe-left', label: '⇇', sublabel: 'Pas G', keyCode: 100, key: '4', code: 'Numpad4' },
   {
-    id: "backward",
-    label: "▼",
-    sublabel: "Reculer",
+    id: 'backward',
+    label: '▼',
+    sublabel: 'Reculer',
     keyCode: 40,
-    key: "ArrowDown",
-    code: "ArrowDown",
+    key: 'ArrowDown',
+    code: 'ArrowDown',
   },
-  { id: "strafe-right", label: "⇉", sublabel: "Pas D", keyCode: 102, key: "6", code: "Numpad6" },
-];
+  { id: 'strafe-right', label: '⇉', sublabel: 'Pas D', keyCode: 102, key: '6', code: 'Numpad6' },
+]
 
 const actionControls: ControlConfig[] = [
   {
-    id: "action-attack",
-    label: "ATTAQUE",
-    sublabel: "Espace",
+    id: 'action-attack',
+    label: 'ATTAQUE',
+    sublabel: 'Espace',
     keyCode: 32,
-    key: " ",
-    code: "Space",
-    color: "magenta",
+    key: ' ',
+    code: 'Space',
+    color: 'magenta',
   },
   {
-    id: "action-enter",
-    label: "ENTRÉE",
-    sublabel: "Valider",
+    id: 'action-enter',
+    label: 'ENTRÉE',
+    sublabel: 'Valider',
     keyCode: 13,
-    key: "Enter",
-    code: "Enter",
-    color: "cyan",
+    key: 'Enter',
+    code: 'Enter',
+    color: 'cyan',
   },
   {
-    id: "action-map",
-    label: "CARTE",
-    sublabel: "Tab",
+    id: 'action-map',
+    label: 'CARTE',
+    sublabel: 'Tab',
     keyCode: 9,
-    key: "Tab",
-    code: "Tab",
-    color: "yellow",
+    key: 'Tab',
+    code: 'Tab',
+    color: 'yellow',
   },
   {
-    id: "action-rest",
-    label: "REPOS",
-    sublabel: "R",
+    id: 'action-rest',
+    label: 'REPOS',
+    sublabel: 'R',
     keyCode: 82,
-    key: "r",
-    code: "KeyR",
-    color: "green",
+    key: 'r',
+    code: 'KeyR',
+    color: 'green',
   },
   {
-    id: "action-esc",
-    label: "MENU",
-    sublabel: "Échap",
+    id: 'action-esc',
+    label: 'MENU',
+    sublabel: 'Échap',
     keyCode: 27,
-    key: "Escape",
-    code: "Escape",
-    color: "cyan",
+    key: 'Escape',
+    code: 'Escape',
+    color: 'cyan',
   },
-];
+]
 
 const triggerHaptic = (duration = 10) => {
-  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
     try {
-      navigator.vibrate(duration);
+      navigator.vibrate(duration)
     } catch {
       // Ignore vibration errors
     }
   }
-};
+}
 
 const dispatchDosKeyEvent = (config: ControlConfig, pressed: boolean) => {
   // 1. Émettre pour le parent qui peut appeler commandInterface.sendKeyEvent si disponible
-  emit("sendKey", config.keyCode, pressed);
+  emit('sendKey', config.keyCode, pressed)
 
   // 2. Dispatcher KeyboardEvent globalement sur window (capturé nativement par js-dos)
-  if (typeof window !== "undefined") {
-    const eventType = pressed ? "keydown" : "keyup";
+  if (typeof window !== 'undefined') {
+    const eventType = pressed ? 'keydown' : 'keyup'
     const event = new KeyboardEvent(eventType, {
       bubbles: true,
       cancelable: true,
@@ -143,73 +143,73 @@ const dispatchDosKeyEvent = (config: ControlConfig, pressed: boolean) => {
       which: config.keyCode,
       key: config.key,
       code: config.code,
-    });
-    window.dispatchEvent(event);
+    })
+    window.dispatchEvent(event)
   }
-};
+}
 
 const handlePointerDown = (config: ControlConfig, event: PointerEvent) => {
-  event.preventDefault();
-  event.stopPropagation();
+  event.preventDefault()
+  event.stopPropagation()
 
-  const target = event.currentTarget as HTMLElement | null;
-  target?.setPointerCapture?.(event.pointerId);
+  const target = event.currentTarget as HTMLElement | null
+  target?.setPointerCapture?.(event.pointerId)
 
   // Annuler un éventuel relâchement différé précédent
-  const existingTimeout = releaseTimeouts.get(config.id);
+  const existingTimeout = releaseTimeouts.get(config.id)
   if (existingTimeout) {
-    clearTimeout(existingTimeout);
-    releaseTimeouts.delete(config.id);
+    clearTimeout(existingTimeout)
+    releaseTimeouts.delete(config.id)
   }
 
-  activeKeys.value.add(config.id);
-  pressStartTimes.set(config.id, performance.now());
+  activeKeys.value.add(config.id)
+  pressStartTimes.set(config.id, performance.now())
 
-  triggerHaptic(config.color === "magenta" ? 15 : 8);
-  dispatchDosKeyEvent(config, true);
-};
+  triggerHaptic(config.color === 'magenta' ? 15 : 8)
+  dispatchDosKeyEvent(config, true)
+}
 
 const handlePointerUp = (config: ControlConfig, event?: PointerEvent) => {
-  event?.preventDefault();
-  event?.stopPropagation();
+  event?.preventDefault()
+  event?.stopPropagation()
 
-  const startTime = pressStartTimes.get(config.id) ?? performance.now();
-  const elapsed = performance.now() - startTime;
-  const remaining = Math.max(0, MIN_HOLD_DURATION_MS - elapsed);
+  const startTime = pressStartTimes.get(config.id) ?? performance.now()
+  const elapsed = performance.now() - startTime
+  const remaining = Math.max(0, MIN_HOLD_DURATION_MS - elapsed)
 
   const doRelease = () => {
-    activeKeys.value.delete(config.id);
-    pressStartTimes.delete(config.id);
-    releaseTimeouts.delete(config.id);
-    dispatchDosKeyEvent(config, false);
-  };
+    activeKeys.value.delete(config.id)
+    pressStartTimes.delete(config.id)
+    releaseTimeouts.delete(config.id)
+    dispatchDosKeyEvent(config, false)
+  }
 
   if (remaining > 0) {
-    const timeout = setTimeout(doRelease, remaining);
-    releaseTimeouts.set(config.id, timeout);
+    const timeout = setTimeout(doRelease, remaining)
+    releaseTimeouts.set(config.id, timeout)
   } else {
-    doRelease();
+    doRelease()
   }
-};
+}
 
 const toggleRightClick = (event: Event) => {
-  event.preventDefault();
-  event.stopPropagation();
-  triggerHaptic(12);
-  isRightClick.value = !isRightClick.value;
-};
+  event.preventDefault()
+  event.stopPropagation()
+  triggerHaptic(12)
+  isRightClick.value = !isRightClick.value
+}
 
 const toggleVisibility = () => {
-  triggerHaptic(10);
-  isVisible.value = !isVisible.value;
-};
+  triggerHaptic(10)
+  isVisible.value = !isVisible.value
+}
 
 onBeforeUnmount(() => {
   for (const timeout of releaseTimeouts.values()) {
-    clearTimeout(timeout);
+    clearTimeout(timeout)
   }
-  releaseTimeouts.clear();
-});
+  releaseTimeouts.clear()
+})
 </script>
 
 <template>
