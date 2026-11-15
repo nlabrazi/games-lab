@@ -144,9 +144,7 @@ const handleExportSave = async () => {
   await exportSaveFile()
 }
 
-const handleManualSave = async () => {
-  await saveGameState()
-}
+const handleManualSave = () => saveGameState()
 
 const openSaveImportDialog = () => {
   saveFileInput.value?.click()
