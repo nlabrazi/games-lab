@@ -5,6 +5,10 @@ export default defineVitestConfig({
   test: {
     restoreMocks: true,
     exclude: DEFAULT_EXCLUDES,
-    coverage: createSharedCoverageConfig(),
+    coverage: createSharedCoverageConfig({
+      thresholds: {
+        lines: 70,
+      },
+    }),
   },
 })
