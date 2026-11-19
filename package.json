@@ -29,7 +29,7 @@
   "devDependencies": {
     "@nlabrazi/config-biome": "^0.2.0",
     "@nlabrazi/config-playwright": "^0.1.0",
-    "@nlabrazi/config-vitest": "^0.1.0",
+    "@nlabrazi/config-vitest": "^0.2.2",
     "@nlabrazi/tsconfig": "^0.1.0",
     "@nuxt/test-utils": "^4.4.0",
     "@nuxtjs/tailwindcss": "^6.14.0",
