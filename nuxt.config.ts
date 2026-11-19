@@ -9,6 +9,11 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-04-22',
   devtools: { enabled: true },
   modules: ['@nuxtjs/tailwindcss'],
+  postcss: {
+    plugins: {
+      'tailwindcss/nesting': false,
+    },
+  },
   runtimeConfig: {
     dosGamesDir: defaultDosGamesDir,
     dosSavesDir: defaultDosSavesDir,

@@ -1,8 +1,14 @@
+import { createSharedCoverageConfig, DEFAULT_EXCLUDES } from '@nlabrazi/config-vitest'
 import { defineVitestConfig } from '@nuxt/test-utils/config'
 
 export default defineVitestConfig({
   test: {
     restoreMocks: true,
-    exclude: ['**/node_modules/**', '**/.nuxt/**', '**/.output/**', 'tests/e2e/**'],
+    exclude: DEFAULT_EXCLUDES,
+    coverage: createSharedCoverageConfig({
+      thresholds: {
+        lines: 70,
+      },
+    }),
   },
 })
