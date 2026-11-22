@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
       target: dev
+      secrets:
+        - npmrc
     image: games-lab-dev
     container_name: games-lab
     ports:
@@ -17,6 +19,10 @@ services:
     volumes:
       - .:/app
       - games-lab-node-modules:/app/node_modules
+
+secrets:
+  npmrc:
+    file: ${NPMRC_FILE:-~/.npmrc}
 
 volumes:
   games-lab-node-modules:
