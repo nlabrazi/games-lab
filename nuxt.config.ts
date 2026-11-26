@@ -6,6 +6,7 @@ const defaultDosSavesDir = import.meta.dev ? 'local/dos-saves' : 'data/dos-saves
   meta tags rétro et police Google.
 */
 export default defineNuxtConfig({
+  extends: ['@nlabrazi/nuxt-layer'],
   compatibilityDate: '2026-04-22',
   devtools: { enabled: true },
   modules: ['@nuxtjs/tailwindcss'],
@@ -15,9 +16,21 @@ export default defineNuxtConfig({
     },
   },
   runtimeConfig: {
+    health: {
+      service: 'games-lab',
+    },
     dosGamesDir: defaultDosGamesDir,
     dosSavesDir: defaultDosSavesDir,
     public: {
+      umami: {
+        websiteId: '1477bf65-b3e0-48dd-9e06-ac9bdc3a8f04',
+        domains: 'games-lab.nabster.dev',
+      },
+      site: {
+        name: 'Games Lab',
+        url: 'https://games-lab.nabster.dev',
+        description: 'Jeux rétro jouables dans le navigateur',
+      },
       dosGamesBaseUrl: '/api/dos-games',
       dosSavesBaseUrl: '/api/dos-saves',
       jsDosScriptUrl: 'https://v8.js-dos.com/latest/js-dos.js',
@@ -62,13 +75,6 @@ export default defineNuxtConfig({
         {
           rel: 'stylesheet',
           href: 'https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap',
-        },
-      ],
-      script: [
-        {
-          src: 'https://umami.nabster.dev/script.js',
-          defer: true,
-          'data-website-id': '1477bf65-b3e0-48dd-9e06-ac9bdc3a8f04',
         },
       ],
     },
